@@ -2,11 +2,11 @@
  *                                                                   *
  *                              zscore.h                             *
  *                                                                   *
- *	Compute a z-score to assess significance of a predicted MFE      *
+ *	Compute a z-score to assess significance of a predicted MFE  *
  *                                                                   *
- *	          c Stefan Washietl, Ivo L Hofacker                      *
+ *	          c Stefan Washietl, Ivo L Hofacker                  *
  *                                                                   *
- *	   $Id: zscore.h,v 1.2 2004-09-19 12:35:54 wash Exp $          *
+ *	   $Id: zscore.h,v 1.3 2004-09-19 13:31:42 wash Exp $        *
  *                                                                   *
  *********************************************************************/
 

@@ -1,0 +1,25 @@
+2004-09-19 14:35  wash
+
+	* COPYING, INSTALL, NEWS, README, TODO, configure.ac, rnaz/RNAz.c,
+	  rnaz/svm_helper.c, rnaz/svm_helper.h, rnaz/zscore.c,
+	  rnaz/zscore.h: Cleaned/formatted code and updated documentation.
+
+2004-09-18 15:25  wash
+
+	* AUTHORS, COPYING, ChangeLog, INSTALL, Makefile.am, NEWS, README,
+	  TODO, configure.ac, init-autotools.sh, librna/Makefile.am,
+	  librna/alifold.c, librna/alifold.h, librna/energy_const.h,
+	  librna/energy_par.h, librna/fold.h, librna/fold_vars.c,
+	  librna/fold_vars.h, librna/intloops.h, librna/pair_mat.h,
+	  librna/params.c, librna/params.h, librna/read_epars.c,
+	  librna/utils.c, librna/utils.h, libsvm/Makefile.am,
+	  libsvm/svm.cpp, libsvm/svm.h, models/Makefile.am,
+	  models/decision.model, models/mfe_avg.model,
+	  models/mfe_stdv.model, rnaz/Makefile.am, rnaz/RNAz.c,
+	  rnaz/svm_helper.c, rnaz/svm_helper.h, rnaz/zscore.c,
+	  rnaz/zscore.h, examples/IRE.aln, examples/Makefile.am,
+	  examples/miRNA.aln, examples/snoRNA.aln, examples/tRNA.aln,
+	  librna/energy_par.c, librna/fold.c, man/Makefile.am, man/RNAz.1:
+	  Initial revision 
+
+
