@@ -7,7 +7,7 @@
  *                                                                   *
  *	          c Stefan Washietl, Ivo L Hofacker                  *
  *                                                                   *
- *	   $Id: RNAz.c,v 1.4 2004-10-20 16:58:46 wash Exp $          *
+ *	   $Id: RNAz.c,v 1.5 2004-10-21 08:02:04 wash Exp $          *
  *                                                                   *
  *********************************************************************/
 
@@ -186,8 +186,6 @@ int main(int argc, char *argv[])
 	  strcpy(strand,"forward");
 	}
   
-	id=meanPairID((const char **)window);
-
 	structure = (char *) space((unsigned) length+1);
 	min_en = alifold(window, structure);
 
@@ -235,6 +233,7 @@ int main(int argc, char *argv[])
 			">consensus\n%s\n%s (%6.2f = %6.2f + %6.2f) \n",
 			string, structure, min_en, real_en, min_en-real_en );
 
+	id=meanPairID((const char **)window);
 	z=sumZ/n_seq;
 	sci=min_en/(sumMFE/n_seq);
 	
