@@ -1,12 +1,14 @@
-/* Last changed Time-stamp: <04/09/15 17:25:53 wash> */
-/*
-                  Compute MFE z-score of an RNA sequence
-		  estimated z-scores are computed by a SVM 
-
-                  c Stefan Washietl, Ivo Hofacker
-
-
-*/
+/*********************************************************************
+ *                                                                   *
+ *                              zscore.c                             *
+ *                                                                   *
+ *	Compute a z-score to assess significance of a predicted MFE      *
+ *                                                                   *
+ *	          c Stefan Washietl, Ivo L Hofacker                      *
+ *                                                                   *
+ *	   $Id: zscore.c,v 1.2 2004-09-19 12:35:54 wash Exp $          *
+ *                                                                   *
+ *********************************************************************/
 
 #include <config.h>
 #include <stdio.h>
@@ -23,6 +25,7 @@
 
 struct svm_model *avg_model, *stdv_model;
 
+
 /* Initializes pointers to the two regression models. If a basename is
    given, models are loaded from files, otherwise standard models are
    used (not implemented yet) */
@@ -34,9 +37,14 @@ void regression_svm_init(char *basefilename){
 
   get_regression_models(&avg_model,&stdv_model,basefilename);
   if (avg_model==NULL)
-	nrerror("RNAz 0.1 Error:\nCould not load mu-regression model. You have to set the RNAZDIR enviroment variable pointing to the model files!\n");
+	nrerror("ERROR: Could not load mu-regression model. \n"
+			"You have to set the RNAZDIR enviroment variable "
+			"pointing to the model files!");
+
   if (stdv_model==NULL)
-	nrerror("RNAz 0.1 Error:\nCould not load sigma-regression model. You have to set the RNAZDIR enviroment variable pointing to the model files!\n");
+	nrerror("ERROR: Could not load sigma-regression model.\n"
+			"You have to set the RNAZDIR enviroment variable "
+			"pointing to the model files!");
 
 }
 
@@ -79,11 +87,6 @@ void predict_values(const char *seq, double *avg, double *stdv) {
   A=((double)n_A)/(n_A+n_T);
   C=((double)n_C)/(n_G+n_C);
 
-  //printf("%u  %f   %f   %f \n",length,GC,A,C);
-
-  //length=116;GC=0.54;A=0.52;C=0.46;
-
-    
   node[0].index = 1; node[0].value = GC;
   node[1].index = 2; node[1].value = A;
   node[2].index = 3; node[2].value = C;

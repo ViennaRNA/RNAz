@@ -8,6 +8,8 @@
 
 - Reconsider output format
 
+- Show output aligned with gaps
+
 - Make user interface more friendly (long options...)
 
 - read position information from Clustal file
@@ -26,4 +28,6 @@
 
 - include support for single sequences and Lfold local folding
 
+--
+$Id: TODO,v 1.2 2004-09-19 12:35:53 wash Exp $
 

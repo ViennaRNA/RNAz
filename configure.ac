@@ -13,6 +13,13 @@ AC_SUBST(VERSION)
 ISODATE=`date +%Y-%m-%d`
 AC_SUBST(ISODATE)
 
+
+AC_HEADER_STDC
+AC_CHECK_HEADERS(malloc.h strings.h unistd.h)
+AC_C_CONST
+AC_TYPE_SIZE_T
+AC_INLINE
+
 AC_CHECK_FUNCS(strdup strstr strchr erand48)
 
 AC_PROG_CXX

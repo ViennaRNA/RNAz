@@ -12,7 +12,7 @@ Content
    2.3. Classification based on both scores
 3. Usage
    3.1. Installation
-   3.2. Enviroment variables
+   3.2. Enviroment variable
    3.3. Invocation
    3.4. Output
 4. Citing RNAz
@@ -35,7 +35,7 @@ thermodynamical stability (negative z-scores) are typical features of
 functional RNAs (e.g. non-coding RNAs or cis-acting regulatory
 elements). RNAz uses both scores to classify a given alignment as
 functional RNA or not. It uses a support vector machine classification
-procedure which estimates a class-probability which can be used as
+procedure which estimates a RNA-class probability which can be used as
 convenient overall-score.
 
 2. Theory
@@ -44,7 +44,7 @@ convenient overall-score.
 2.1. The structure conservation index
 =====================================
 
-RNAz uses the programs from the Vienna RNA package to perform minimum free
+RNAz uses programs from the Vienna RNA package to perform minimum free
 energy (MFE) RNA secondary structure predictions.
 
 First, it calculates the average MFEs for all single sequences in the
@@ -52,19 +52,18 @@ aligment using RNAfold.
 
 Second the complete alignment is folded using RNAalifold. RNAalifold
 implements a consensus folding algorithm which uses essentially the same
-algorithms and energy parameters as standard programs for minimum free
-energy (MFE) predictions. It calculates a consensus MFE which is composed
-of an energy term averaging the energy contributions of the single
-sequences and a covariance term rewarding compensatory and consistent
-mutations.
+algorithms and energy parameters as RNAfold. It calculates a consensus MFE
+which is composed of an energy term averaging the energy contributions of
+the single sequences and a covariance term rewarding compensatory and
+consistent mutations.
 
 If the sequences in the alignment can fold into a common structure, the
 average MFE and the consensus MFE will be of similar dimension. If there is
 no common structure, the consensus MFE will be higher (i.e. less stable)
 than the average MFE of the single sequences.
 
-Based on this intuitive rationale, we define a structure conservation
-index:
+Based on this intuitive rationale, a structure conservation index is
+defined:
 
                        consensus MFE
                  SCI=  --------------
@@ -79,14 +78,15 @@ by compensatory and/or consistent mutations.
 2.2. Thermodynamic stability
 ============================
 
-A predicted MFE as calculated by RNAfold is difficult to interpret in
-absolute terms. It depends on the length and the base composition of the
-sequences (longer sequence => lower MFE, higher GC-content => lower
-MFE). Typically the significane of a MFE is estimated by comparing to many
-random sequences of the same length and base composition. If mu is the mean
-and sigma the standard deviation of the MFEs of many random sequences a
-convenient normalized measure for the significance of the native sequence
-with MFE m is a z-score:
+The significance of a predicted MFE as calculated by RNAfold is difficult
+to interpret in absolute terms. It depends on the length and the base
+composition of the sequences (longer sequence => lower MFE, higher
+GC-content => lower MFE). Typically the significane of a MFE is estimated
+by comparing to many random sequences of the same length and base
+composition. If mu is the mean and sigma the standard deviation of the MFEs
+of many random sequences a convenient normalized measure for the
+significance of the native sequence with MFE m is a z-score:
+
                           m - mu
                     z = ---------
                           sigma
@@ -95,7 +95,7 @@ RNAz can effeciently calculate z-scores without sampling. Negative z-scores
 indicate that the native sequence is more stable than the random
 background. The unit of z-scores are standard deviations. Random MFEs can
 be roughly approximated by a standard normal distribution which gives an
-impression of associated P values (e.g. z=-2 => P=0.98). 
+impression of associated P values (e.g. z=-2 => P=0.98).
 
 
 
@@ -114,7 +114,7 @@ significance of the SCI depending on the sequence variation.
 
 The confidence level of this RNA-class probability or "RNAz P-value"
 slightly varies depending on the properties of the input alignment. In our
-tests, P=0.5 and P=0.9 have specificities of 96% and 99% in our tests.
+tests, P=0.5 and P=0.9 had specificities of 96% and 99%.
 
 
 3. Usage
@@ -126,15 +126,16 @@ tests, P=0.5 and P=0.9 have specificities of 96% and 99% in our tests.
 See INSTALL for details.
 
 
-3.2. Enviroment variables
-=========================
+3.2. Enviroment variable
+========================
 
 To run RNAz you have to set the RNAZDIR enviroment variable pointing to
 the RNAz model files (*.model). The command depends on your shell and
-the location where you installed RNAz. For a default installation on a
-BASH shell type:
+the location where you installed RNAz. For a default installation type:
 
-export RNAZDIR=/usr/local/share/RNAz/models
+export RNAZDIR=/usr/local/share/RNAz/models                (BASH shell)
+ or
+setenv RNAZDIR /usr/local/share/RNAz/models                (C/TC-shell)
 
 
 3.3. Invocation
@@ -173,8 +174,10 @@ Header:
 ############################  RNAz 0.1 ###############################
  
  Sequences: 4 <- Number of sequences in the alignment
+ Slice: 1-74 <- region that is scored, by default complete alignment
  Columns: 74  <- Columns of the alignments
- Strand: reverse <- Strand considered for calculation (forward or reverse)
+ Strand: reverse <- Strand considered for calculation 
+                    ("forward" or "reverse")
  Mean pairwise identity:  74.38 <- in percent
  Mean single sequence MFE: -33.10 <- average RNAfold MFE in kcal/Mol
  Consensus MFE: -30.98 <- consensus MFE calculated by RNAalifold
@@ -182,10 +185,11 @@ Header:
  Covariance contribution:  -3.25 <- RNAalifold covariance part
  Mean z-score:  -2.68 
  Structure conservation index:   0.94
- SVM decision value:   3.87  <- Probably not of much interest...
+ SVM decision value:   3.87  <- Internal decision value, probably 
+                                not of much interest...
  SVM RNA-class probability: 0.999672 <- Probability estimate for the
                                         decision value, "RNAz P-value"
- Prediction: RNA <- RNA if P>=0.5 else no RNA
+ Prediction: RNA <- "RNA" if P>=0.5 else "no RNA"
  
 ######################################################################
 
@@ -266,6 +270,10 @@ in mind the following notes:
 
 Please feel free to contact the author for bug-reports, feature-requests,
 suggestions etc. Of course I also look forward to hearing from you if you
-find something biologically interesting using RNAz. 
+discoverd something biologically interesting using RNAz. 
 
 Stefan Washietl <wash@tbi.univie.ac.at>
+
+--
+$Id: README,v 1.2 2004-09-19 12:35:53 wash Exp $
+

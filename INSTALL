@@ -19,16 +19,16 @@ into a self-contained directory run configure for example like this:
 
 To run RNAz you have to set the RNAZDIR enviroment variable pointing to
 the RNAz model files (*.model). The command depends on your shell and
-the location where you installed RNAz. For a default installation on a
-BASH shell type:
+the location where you installed RNAz. For a default installation on type:
 
-export RNAZDIR=/usr/local/share/RNAz/models
-
+export RNAZDIR=/usr/local/share/RNAz/models                (BASH shell)
+ or
+setenv RNAZDIR /usr/local/share/RNAz/models                (C/TC-shell)
 
 You can test RNAz on one of the example alignments (installed
 by default in /usr/local/share/RNAz/examples)
-                                                                                                                                                             
-																			     cd /usr/local/share/RNAz/examples
+
+cd /usr/local/share/RNAz/examples
 RNAz tRNA.aln
 																			     
 
@@ -215,3 +215,7 @@ operates.
      script, and exit.
 
 `configure' also accepts some other, not widely useful, options.
+
+--
+$Id: INSTALL,v 1.2 2004-09-19 12:35:53 wash Exp $
+ 

@@ -1,3 +1,16 @@
+/*********************************************************************                
+ *                                                                   *
+ *                          svm_helper.c                             *
+ *                                                                   *
+ *   Functions relating to SVM regression/classification and         *
+ *    for interacting with the SVMLIB libraries                      *
+ *                                                                   *
+ *	          c Stefan Washietl, Ivo L Hofacker                      *
+ *                                                                   *
+ *	   $Id: svm_helper.c,v 1.2 2004-09-19 12:35:54 wash Exp $          *
+ *                                                                   *
+ *********************************************************************/
+
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,21 +26,15 @@
    training set must be known to scale the values appropriately.*/
 
 /*                              Mean  Std.Dev. */
-double scale_regression[][2]={{0.5,0.1581213081},   /* GC-content */
-							  {0.5,0.1581213081},  /* "A-content" */
-							  {0.5,0.1581213081},  /* "C-content" */
-							  {225.0,114.569772373}};  /* length */
+double scale_regression[][2]={{0.5,0.1581213081},    /* GC-content  */
+							  {0.5,0.1581213081},    /* "A-content" */
+							  {0.5,0.1581213081},    /* "C-content" */
+							  {225.0,114.569772373}};/* length      */
 
-
-/* double scale_decision[][2]= {{-7.6,2.21 }, */
-/* 							 {0,1.23 }, */
-/* 							 {0,99.55},    */
-/* 							 {0,6}};       */
-
-double scale_decision[][2]= {{-7.87,2.76 },/* z */
-							 {0,1.23 },   /* SCI */
-							 {52.35,99.55},   /* ID */
-							 {2,6}};      /* k  */
+double scale_decision[][2]= {{-7.87,2.76 }, /* z   */
+							 {0,1.23 },     /* SCI */
+							 {52.35,99.55}, /* ID  */
+							 {2,6}};        /* k   */
 
 
 /* Also y-values are scaled in the regression SVMs, so also here the
@@ -35,7 +42,6 @@ double scale_decision[][2]= {{-7.87,2.76 },/* z */
 
 double scale_avg[]={-58.60276,45.24618};
 double scale_stdv[]={4.098457,1.107606};
-
 
 
 /* Scales a SVM-lib "node" according to the scale_arrays defined
@@ -98,7 +104,9 @@ void backscale_regression(double* avg, double* stdv){
    given by a common basename. If no name is given, default models
    hard-coded in this file are used */
 
-void get_regression_models(struct svm_model** avg_model, struct svm_model** stdv_model, char *basefilename){
+void get_regression_models(struct svm_model** avg_model,
+						   struct svm_model** stdv_model,
+						   char *basefilename){
 
   char fn[256];
 
