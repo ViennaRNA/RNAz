@@ -1,0 +1,29 @@
+- Generate models for alignments of N>6
+
+- Output warnings if something is out of range and result is thus extrapolated
+
+- Include better treatment of missing data (sequences with too much gaps and Ns)
+
+- Include sliding window options
+
+- Reconsider output format
+
+- Make user interface more friendly (long options...)
+
+- read position information from Clustal file
+
+- Read also aligned fasta format
+
+- include graphical output of consensus structures for hits found
+
+- include graphical output illustrating score SCI/z significance
+
+- include shuffling option for negative controls
+
+- include significance estimation by scoring random alignments
+
+- compile default models into RNAz making strict dependence on enviroment variable obsolete
+
+- include support for single sequences and Lfold local folding
+
+
