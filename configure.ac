@@ -1,4 +1,4 @@
-AC_INIT(RNAz, 0.1.1, wash@tbi.univie.ac.at, RNAz)
+AC_INIT(RNAz, [0.1.1], [wash@tbi.univie.ac.at], [RNAz])
 AM_INIT_AUTOMAKE
 
 AC_PROG_CC
@@ -30,6 +30,6 @@ AC_PROG_INSTALL
 
 AC_CONFIG_HEADERS(config.h) 
 
-AC_OUTPUT(Makefile librna/Makefile libsvm/Makefile rnaz/Makefile models/Makefile examples/Makefile man/Makefile)
+AC_OUTPUT(Makefile librna/Makefile rnaz/Makefile models/Makefile examples/Makefile man/Makefile)
 
 
