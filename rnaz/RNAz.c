@@ -7,7 +7,7 @@
  *                                                                   *
  *	          c Stefan Washietl, Ivo L Hofacker                  *
  *                                                                   *
- *	   $Id: RNAz.c,v 1.3 2004-09-19 13:31:41 wash Exp $          *
+ *	   $Id: RNAz.c,v 1.4 2004-10-20 16:58:46 wash Exp $          *
  *                                                                   *
  *********************************************************************/
 
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
   char *string=NULL;
   double singleMFE,sumMFE,singleZ,sumZ,z,sci,id,decValue,prob;
   double min_en, real_en;
-  int i,j,r;
+  int i,j,r,countSeq;
 
   /* Global RNA package variables */
   do_backtrack = 1; 
@@ -135,93 +135,16 @@ int main(int argc, char *argv[])
 			" enviroment variable pointing to the model files!\n");
   }
  
-  n_seq = read_clustal(clust_file, AS, names);
+  //n_seq = read_clustal(clust_file, AS, names);
 
-  if (clust_file != stdin) fclose(clust_file);
-  if (n_seq==0) nrerror("ERROR: There were problems"
-						" reading the input file.\n");
+  //if (clust_file != stdin) fclose(clust_file);
+  //if (n_seq==0) nrerror("ERROR: There were problems"
+  //					" reading the input file.\n");
 
-  length = (int) strlen(AS[0]);
 
-  /* if a slice is specified by the user */
-  if (from!=-1 || to!=-1){
-  	if ((from!=-1) && (to==-1) || (from==-1) && (to!=-1)){
-	  nrerror("ERROR: You have to set both -f and -t parameters"
-			  " to score a slice of the alignment.\n");
-	}
-	if ((from>=to)||(from<=0)||(to>length)){
-	  nrerror("ERROR: -f and/or -t parameters out of range"
-			  " (no reasonable slice specified)\n");
-	}
-	sliceAln((const char **)AS, (char **)window, from, to);
-	length=to-from+1;
-  } else { /* take complete alignment */
-	/* window=AS does not work..., deep copy seems not necessary here*/
-	from=1;
-	to=length;
-	sliceAln((const char **)AS, (char **)window, from, length);
-  }
-  
-  if (reverse==1){
-	revAln((char **)window);
-	strcpy(strand,"reverse");
-  } else {
-	strcpy(strand,"forward");
-  }
-  
-  id=meanPairID((const char **)window);
+  countSeq=0;
 
-  structure = (char *) space((unsigned) length+1);
-  min_en = alifold(window, structure);
-
-  sumZ=0;
-  sumMFE=0;
-
-  output=(char *)space(sizeof(char)*(length+16)*(n_seq+1)*3);
-  
   regression_svm_init(modelDir);
-
-  for (i=0;i<n_seq;i++){
-	singleStruc = space(strlen(window[i])+1);
-	woGapsSeq = space(strlen(window[i])+1);
-	j=0;
-	while (window[i][j]){
-	  window[i][j]=toupper(window[i][j]);
-	  if (window[i][j]=='T') window[i][j]='U';
-	  if (window[i][j]!='-'){
-		woGapsSeq[strlen(woGapsSeq)]=window[i][j];
-		woGapsSeq[strlen(woGapsSeq)]='\0';
-	  }
-	  ++j;
-	}
-
-	singleMFE = fold(woGapsSeq, singleStruc);
-	singleZ=mfe_zscore(woGapsSeq,singleMFE);
-	
-	sumZ+=singleZ;
-	sumMFE+=singleMFE;
-	sprintf(output+strlen(output),">%s\n%s\n%s ( %6.2f)\n",
-			names[i],woGapsSeq,singleStruc,singleMFE);
-	free(woGapsSeq);
-	free(singleStruc);
-  }
-
-  {
-    int i; double s=0;
-    extern int eos_debug;
-    eos_debug=-1; /* shut off warnings about nonstandard pairs */
-    for (i=0; window[i]!=NULL; i++) 
-      s += energy_of_struct(window[i], structure);
-    real_en = s/i;
-  }
-
-  string = consensus((const char **) window);
-  sprintf(output+strlen(output),
-		  ">consensus\n%s\n%s (%6.2f = %6.2f + %6.2f) \n",
-		  string, structure, min_en, real_en, min_en-real_en );
-
-  z=sumZ/n_seq;
-  sci=min_en/(sumMFE/n_seq);
 
   decision_model=get_decision_model(modelDir);
 
@@ -230,41 +153,131 @@ int main(int argc, char *argv[])
 			"the RNAZDIR enviroment variable pointing to the model files!\n");
   }
 
-  decValue=999;
-  classify(&prob,&decValue,decision_model,id,n_seq,z,sci);
-  printf("\n###########################  RNAz 0.1.1  #############################\n\n");
-  printf(" Sequences: %u\n", n_seq);
-  printf(" Slice: %u to %u\n",from,to);
-  printf(" Columns: %u\n",length);
-  printf(" Strand: %s\n",strand);
-  printf(" Mean pairwise identity: %6.2f\n", id);
-  printf(" Mean single sequence MFE: %6.2f\n", sumMFE/n_seq);
-  printf(" Consensus MFE: %6.2f\n",min_en);
-  printf(" Energy contribution: %6.2f\n",real_en);
-  printf(" Covariance contribution: %6.2f\n",min_en-real_en);
-  printf(" Mean z-score: %6.2f\n",z);
-  printf(" Structure conservation index: %6.2f\n",sci);
-  printf(" SVM decision value: %6.2f\n",decValue);
-  printf(" SVM RNA-class probability: %6f\n",prob);
-  if (prob>0.5){
-	printf(" Prediction: RNA\n");
-  }
-  else {
-	printf(" Prediction: no RNA\n");
-  }
-	
-  printf("\n######################################################################\n\n");
+
   
-  printf("%s",output);
+  while ((n_seq=read_clustal(clust_file, AS, names))!=0){
+	countSeq++;
+	length = (int) strlen(AS[0]);
+  
+	/* if a slice is specified by the user */
+  
+	if ((from!=-1 || to!=-1) && (countSeq==1)){
+	  if (((from!=-1) && (to==-1)) || ((from==-1) && (to!=-1))){
+		nrerror("ERROR: You have to set both -f and -t parameters"
+				" to score a slice of the alignment.\n");
+	  }
+	  if ((from>=to)||(from<=0)||(to>length)){
+		nrerror("ERROR: -f and/or -t parameters out of range"
+				" (no reasonable slice specified)\n");
+	  }
+	  sliceAln((const char **)AS, (char **)window, from, to);
+	  length=to-from+1;
+	} else { /* take complete alignment */
+	  /* window=AS does not work..., deep copy seems not necessary here*/
+	  from=1;
+	  to=length;
+	  sliceAln((const char **)AS, (char **)window, 1, length);
+	}
+  
+	if (reverse==1){
+	  revAln((char **)window);
+	  strcpy(strand,"reverse");
+	} else {
+	  strcpy(strand,"forward");
+	}
+  
+	id=meanPairID((const char **)window);
 
-  free(output);
+	structure = (char *) space((unsigned) length+1);
+	min_en = alifold(window, structure);
 
-  freeAln((char **)AS);
-  freeAln((char **)window);
+	sumZ=0;
+	sumMFE=0;
 
-  regression_svm_free();
+	output=(char *)space(sizeof(char)*(length+16)*(n_seq+1)*3);
+  
+	for (i=0;i<n_seq;i++){
+	  singleStruc = space(strlen(window[i])+1);
+	  woGapsSeq = space(strlen(window[i])+1);
+	  j=0;
+	  while (window[i][j]){
+		window[i][j]=toupper(window[i][j]);
+		if (window[i][j]=='T') window[i][j]='U';
+		if (window[i][j]!='-'){
+		  woGapsSeq[strlen(woGapsSeq)]=window[i][j];
+		  woGapsSeq[strlen(woGapsSeq)]='\0';
+		}
+		++j;
+	  }
+	  
+	  singleMFE = fold(woGapsSeq, singleStruc);
+	  singleZ=mfe_zscore(woGapsSeq,singleMFE);
+	  
+	  sumZ+=singleZ;
+	  sumMFE+=singleMFE;
+	  sprintf(output+strlen(output),">%s\n%s\n%s ( %6.2f)\n",
+			  names[i],woGapsSeq,singleStruc,singleMFE);
+	  free(woGapsSeq);
+	  free(singleStruc);
+	}
+
+	{
+	  int i; double s=0;
+	  extern int eos_debug;
+	  eos_debug=-1; /* shut off warnings about nonstandard pairs */
+	  for (i=0; window[i]!=NULL; i++) 
+		s += energy_of_struct(window[i], structure);
+	  real_en = s/i;
+	}
+
+	string = consensus((const char **) window);
+	sprintf(output+strlen(output),
+			">consensus\n%s\n%s (%6.2f = %6.2f + %6.2f) \n",
+			string, structure, min_en, real_en, min_en-real_en );
+
+	z=sumZ/n_seq;
+	sci=min_en/(sumMFE/n_seq);
+	
+	decValue=999;
+	classify(&prob,&decValue,decision_model,id,n_seq,z,sci);
+	printf("\n###########################  RNAz 0.1.1  #############################\n\n");
+	printf(" Sequences: %u\n", n_seq);
+	printf(" Slice: %u to %u\n",from,to);
+	printf(" Columns: %u\n",length);
+	printf(" Strand: %s\n",strand);
+	printf(" Mean pairwise identity: %6.2f\n", id);
+	printf(" Mean single sequence MFE: %6.2f\n", sumMFE/n_seq);
+	printf(" Consensus MFE: %6.2f\n",min_en);
+	printf(" Energy contribution: %6.2f\n",real_en);
+	printf(" Covariance contribution: %6.2f\n",min_en-real_en);
+	printf(" Mean z-score: %6.2f\n",z);
+	printf(" Structure conservation index: %6.2f\n",sci);
+	printf(" SVM decision value: %6.2f\n",decValue);
+	printf(" SVM RNA-class probability: %6f\n",prob);
+	if (prob>0.5){
+	  printf(" Prediction: RNA\n");
+	}
+	else {
+	  printf(" Prediction: no RNA\n");
+	}
+	
+	printf("\n######################################################################\n\n");
+	
+	printf("%s//\n\n",output);
+	
+	fflush(stdout);
+	
+	free(output);
+	freeAln((char **)AS);
+	freeAln((char **)names);
+	freeAln((char **)window);
+	
+
+  }
+
   svm_destroy_model(decision_model);
-
+  regression_svm_free();
+  
   return 0;
 }
 
@@ -289,9 +302,16 @@ PRIVATE int read_clustal(FILE *clust, char *alignedSeqs[], char *names[]) {
   int  n, nn=0, num_seq = 0;
    
   if ((line=get_line(clust)) == NULL) {
-	fprintf(stderr, "ERROR: Empty CLUSTAL file\n"); return 0;
+	//fprintf(stderr, "ERROR: Empty CLUSTAL file\n");
+	return 0;
   }
 
+  
+  while (((n=strlen(line))<4) || isspace((int)line[0])){
+	free(line); line = get_line(clust);
+  }
+
+ 
   if (strncmp(line,"CLUSTAL", 7) !=0) {
 	fprintf(stderr, "ERROR: No CLUSTAL file\n");
 	free(line); return 0;
@@ -299,7 +319,7 @@ PRIVATE int read_clustal(FILE *clust, char *alignedSeqs[], char *names[]) {
   free(line);
   line = get_line(clust);
 
-  while (line!=NULL) {
+  while ((line!=NULL) && (strcmp(line,"//")!=0)) {
 	if (((n=strlen(line))<4) || isspace((int)line[0])) {
 	  /* skip non-sequence line */
 	  free(line); line = get_line(clust);
@@ -333,11 +353,11 @@ PRIVATE int read_clustal(FILE *clust, char *alignedSeqs[], char *names[]) {
 	  fprintf(stderr, "ERROR: Too many sequences in CLUSTAL file\n");
 	  return 0;
 	}
-	
 	line = get_line(clust);
   }
-   
+
   alignedSeqs[num_seq] = NULL;
+  names[num_seq] = NULL;
   if (num_seq == 0) {
 	fprintf(stderr, "ERROR: No sequences found in CLUSTAL file\n");
 	return 0;
@@ -482,6 +502,7 @@ void sliceAln(const char *sourceAln[], char *destAln[],
 	strncpy(slice,sourceAln[i]+from-1,(to-from+1));
 	destAln[i]=slice;
   }
+  destAln[i]=NULL;
 }
 
 /********************************************************************
