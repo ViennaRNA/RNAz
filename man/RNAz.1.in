@@ -1,4 +1,4 @@
-.TH "RNAz" "1" "0.1.1" "Stefan Washietl" ""
+.TH "RNAz" "1" "@VERSION@" "Stefan Washietl" ""
 .SH "NAME"
 .LP 
 RNAz \- Detecting stable and conserved RNA secondary structures in multiple sequence alignments
