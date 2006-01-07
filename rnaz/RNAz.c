@@ -2,15 +2,15 @@
  *                                                                   *
  *                              RNAz.c                               *
  *                                                                   *
- *	Assess alignments for exceptionally stable and/or conserved  *
- *	secondary structures using RNAalifold/RNAfold and SVMs.      *
+ *	Assess alignments for exceptionally stable and/or conserved      *
+ *	secondary structures using RNAalifold/RNAfold and SVMs.          *
  *                                                                   *
- *	          c Stefan Washietl, Ivo L Hofacker                  *
+ *	          c Stefan Washietl, Ivo L Hofacker                      *
  *                                                                   *
- *	   $Id: RNAz.c,v 1.5 2004-10-21 08:02:04 wash Exp $          *
+ *	   $Id: RNAz.c,v 1.6 2006-01-07 14:25:37 wash Exp $              *
  *                                                                   *
  *********************************************************************/
-
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -75,6 +75,8 @@ int main(int argc, char *argv[])
   int to=-1;
 
   FILE *clust_file=stdin; /* Input file */
+  char  *outFile=NULL;
+  FILE *out=stdout; /* Output file */
 
   /* Arrays storing sequences/names of the alignments */
   char *AS[MAX_NUM_NAMES];     
@@ -109,6 +111,17 @@ int main(int argc, char *argv[])
 		r=sscanf(argv[++i], "%d", &to);
 		if (r!=1) usage();
 		break;
+	   case 'o':
+		 outFile = argv[++i];
+		 if (outFile[0]=='-'){
+		   usage();
+		 }
+		 out = fopen(outFile, "w");
+		 if (out == NULL){
+		   nrerror("Could not open output file");
+		   exit(1);
+		 }
+		 break;
 	  case 'v':showVersion=1;break;
 	  case 'h':showHelp=1;break;
 	  default: usage();
@@ -123,6 +136,7 @@ int main(int argc, char *argv[])
       }
     }
   }
+
 
   if (showVersion==1) version();
   if (showHelp==1) help();
@@ -142,6 +156,7 @@ int main(int argc, char *argv[])
   //					" reading the input file.\n");
 
 
+ 
   countSeq=0;
 
   regression_svm_init(modelDir);
@@ -152,8 +167,6 @@ int main(int argc, char *argv[])
 	nrerror("ERROR: Could not find decision-model. You have to set "
 			"the RNAZDIR enviroment variable pointing to the model files!\n");
   }
-
-
   
   while ((n_seq=read_clustal(clust_file, AS, names))!=0){
 	countSeq++;
@@ -236,35 +249,39 @@ int main(int argc, char *argv[])
 	id=meanPairID((const char **)window);
 	z=sumZ/n_seq;
 	sci=min_en/(sumMFE/n_seq);
-	
+
 	decValue=999;
+	prob=0;
+	
 	classify(&prob,&decValue,decision_model,id,n_seq,z,sci);
-	printf("\n###########################  RNAz 0.1.1  #############################\n\n");
-	printf(" Sequences: %u\n", n_seq);
-	printf(" Slice: %u to %u\n",from,to);
-	printf(" Columns: %u\n",length);
-	printf(" Strand: %s\n",strand);
-	printf(" Mean pairwise identity: %6.2f\n", id);
-	printf(" Mean single sequence MFE: %6.2f\n", sumMFE/n_seq);
-	printf(" Consensus MFE: %6.2f\n",min_en);
-	printf(" Energy contribution: %6.2f\n",real_en);
-	printf(" Covariance contribution: %6.2f\n",min_en-real_en);
-	printf(" Mean z-score: %6.2f\n",z);
-	printf(" Structure conservation index: %6.2f\n",sci);
-	printf(" SVM decision value: %6.2f\n",decValue);
-	printf(" SVM RNA-class probability: %6f\n",prob);
+
+	
+	fprintf(out,"\n###########################  RNAz "PACKAGE_VERSION"  #############################\n\n");
+	fprintf(out," Sequences: %u\n", n_seq);
+	fprintf(out," Slice: %u to %u\n",from,to);
+	fprintf(out," Columns: %u\n",length);
+	fprintf(out," Strand: %s\n",strand);
+	fprintf(out," Mean pairwise identity: %6.2f\n", id);
+	fprintf(out," Mean single sequence MFE: %6.2f\n", sumMFE/n_seq);
+	fprintf(out," Consensus MFE: %6.2f\n",min_en);
+	fprintf(out," Energy contribution: %6.2f\n",real_en);
+	fprintf(out," Covariance contribution: %6.2f\n",min_en-real_en);
+	fprintf(out," Mean z-score: %6.2f\n",z);
+	fprintf(out," Structure conservation index: %6.2f\n",sci);
+	fprintf(out," SVM decision value: %6.2f\n",decValue);
+	fprintf(out," SVM RNA-class probability: %6f\n",prob);
 	if (prob>0.5){
-	  printf(" Prediction: RNA\n");
+	  fprintf(out," Prediction: RNA\n");
 	}
 	else {
-	  printf(" Prediction: no RNA\n");
+	  fprintf(out," Prediction: no RNA\n");
 	}
 	
-	printf("\n######################################################################\n\n");
+	fprintf(out,"\n######################################################################\n\n");
 	
-	printf("%s//\n\n",output);
+	fprintf(out,"%s//\n\n",output);
 	
-	fflush(stdout);
+	fflush(out);
 	
 	free(output);
 	freeAln((char **)AS);
@@ -544,8 +561,10 @@ PRIVATE void classify(double* prob, double* decValue,
 
   struct svm_node node[5];
 
-  double value=0;
-  
+
+  double* value;
+  value=(double*)space(sizeof(double)*2);
+
   node[0].index = 1; node[0].value = z;
   node[1].index = 2; node[1].value = sci;
   node[2].index = 3; node[2].value = id;
@@ -554,10 +573,13 @@ PRIVATE void classify(double* prob, double* decValue,
 
   scale_decision_node((struct svm_node*)&node);
 
-  svm_predict_values(decision_model,node,&value);
-  *decValue=value;
-  svm_predict_probability(decision_model,node,&value);
-  *prob=value;
+  svm_predict_values(decision_model,node,value);
+  *decValue=value[0];
+
+  svm_predict_probability(decision_model,node,value);
+  *prob=value[0];
+  
+  
 }
 
 
@@ -579,6 +601,7 @@ PRIVATE void help(void){
 		  "file    Input alignment in Clustal W format\n"
 		  "-f -t   Score subregion from-to of alignment\n"
 		  "-r      Scan reverse complement of input alignment\n"
+		  "-o      Write output to file (default STDOUT)\n"
 		  "-v      Show version information\n"
 		  "-h      Show this help message\n"
 		  );
@@ -586,7 +609,7 @@ PRIVATE void help(void){
 }
 
 PRIVATE void version(void){
-  printf("RNAz 0.1.1, September 2004\n");
+  printf("RNAz version " PACKAGE_VERSION ", September 2004\n");
   exit(EXIT_SUCCESS);
 }
 
