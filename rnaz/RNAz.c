@@ -7,7 +7,7 @@
  *                                                                   *
  *	          c Stefan Washietl, Ivo L Hofacker                      *
  *                                                                   *
- *	   $Id: RNAz.c,v 1.6 2006-01-07 14:25:37 wash Exp $              *
+ *	   $Id: RNAz.c,v 1.7 2006-01-09 18:32:52 wash Exp $              *
  *                                                                   *
  *********************************************************************/
 #include "config.h"
@@ -30,29 +30,48 @@
 #define MAX_NUM_NAMES 500
 #define MIN2(A, B) ((A) < (B) ? (A) : (B))
 
+enum alnFormat {UNKNOWN=0, CLUSTAL=1, MAF=2};
+
+struct aln {
+  char *name;
+  char *seq;
+};
+
+
 PRIVATE void usage(void);
 PRIVATE void help(void);
 PRIVATE void version(void);
 
 PRIVATE int read_clustal(FILE *clust,
-						 char *alignedSeqs[],char *names[]);
+						 struct aln *alignedSeqs[]);
 
-PRIVATE char *consensus(const char *AS[]);
+PRIVATE int read_maf(FILE *clust,
+						 struct aln *alignedSeqs[]);
 
-PRIVATE double meanPairID(const char *AS[]);
 
-PRIVATE void revAln(char *AS[]);
+PRIVATE char *consensus(const struct aln *AS[]);
 
-PRIVATE void sliceAln(const char *sourceAln[], char *destAln[],
+PRIVATE double meanPairID(const struct aln *AS[]);
+
+PRIVATE void revAln(struct aln *AS[]);
+
+PRIVATE void sliceAln(const struct aln *sourceAln[], struct aln *destAln[],
 					  int from, int to);
 
-PRIVATE void freeAln(char *AS[]);
+PRIVATE void freeAln(struct aln *AS[]);
 
 PRIVATE void classify(double* prob, double* decValue,
 					  struct svm_model* decision_model,
 					  double id,int n_seq, double z,double sci);
 
+PRIVATE struct aln* createAlnEntry(char* name, char* seq); 
+PRIVATE void freeAlnEntry(struct aln* entry);
+PRIVATE void printAln(const struct aln* AS[]);
 
+PRIVATE int checkFormat(FILE *file);
+
+PRIVATE char** splitFields(char* string);
+PRIVATE void freeFields(char** fields);
 
 
 /********************************************************************
@@ -78,10 +97,9 @@ int main(int argc, char *argv[])
   char  *outFile=NULL;
   FILE *out=stdout; /* Output file */
 
-  /* Arrays storing sequences/names of the alignments */
-  char *AS[MAX_NUM_NAMES];     
-  char *names[MAX_NUM_NAMES];
-  char *window[MAX_NUM_NAMES]; 
+  struct aln *AS[MAX_NUM_NAMES];     
+  struct aln *window[MAX_NUM_NAMES]; 
+  char *tmpAln[MAX_NUM_NAMES];
 
   int n_seq;  /* number of input sequences */
   int length; /* length of alignment/window */
@@ -92,7 +110,8 @@ int main(int argc, char *argv[])
   char *string=NULL;
   double singleMFE,sumMFE,singleZ,sumZ,z,sci,id,decValue,prob;
   double min_en, real_en;
-  int i,j,r,countSeq;
+  int i,j,r,countAln;
+  int (*readFunction)(FILE *clust,struct aln *alignedSeqs[]);
 
   /* Global RNA package variables */
   do_backtrack = 1; 
@@ -136,45 +155,48 @@ int main(int argc, char *argv[])
       }
     }
   }
+  
+  switch(checkFormat(clust_file)){
 
+  case CLUSTAL:
+	readFunction=&read_clustal;
+	break;
+  case MAF:
+	readFunction=&read_maf;
+	break;
+  }
 
   if (showVersion==1) version();
   if (showHelp==1) help();
-
   
   modelDir=getenv("RNAZDIR");
+
 
   if (modelDir==NULL){
 	nrerror("ERROR: Could not find models. You have to set the RNAZDIR"
 			" enviroment variable pointing to the model files!\n");
   }
- 
-  //n_seq = read_clustal(clust_file, AS, names);
-
-  //if (clust_file != stdin) fclose(clust_file);
-  //if (n_seq==0) nrerror("ERROR: There were problems"
-  //					" reading the input file.\n");
-
-
- 
-  countSeq=0;
+  
 
   regression_svm_init(modelDir);
-
+  
   decision_model=get_decision_model(modelDir);
+  
 
-  if (decision_model==NULL){
-	nrerror("ERROR: Could not find decision-model. You have to set "
-			"the RNAZDIR enviroment variable pointing to the model files!\n");
+  if (decision_model==NULL){	
+	nrerror("ERROR: Could not find decision-model. You have to set "			
+			"the RNAZDIR enviroment variable pointing to the model files!\n");	
   }
+
   
-  while ((n_seq=read_clustal(clust_file, AS, names))!=0){
-	countSeq++;
-	length = (int) strlen(AS[0]);
-  
+  countAln=0;
+  while ((n_seq=readFunction(clust_file, AS))!=0){
+	countAln++;
+	length = (int) strlen(AS[0]->seq);
+	
 	/* if a slice is specified by the user */
   
-	if ((from!=-1 || to!=-1) && (countSeq==1)){
+	if ((from!=-1 || to!=-1) && (countAln==1)){
 	  if (((from!=-1) && (to==-1)) || ((from==-1) && (to!=-1))){
 		nrerror("ERROR: You have to set both -f and -t parameters"
 				" to score a slice of the alignment.\n");
@@ -183,24 +205,46 @@ int main(int argc, char *argv[])
 		nrerror("ERROR: -f and/or -t parameters out of range"
 				" (no reasonable slice specified)\n");
 	  }
-	  sliceAln((const char **)AS, (char **)window, from, to);
+	  sliceAln((const struct aln**)AS, (struct aln **)window, from, to);
 	  length=to-from+1;
 	} else { /* take complete alignment */
 	  /* window=AS does not work..., deep copy seems not necessary here*/
 	  from=1;
 	  to=length;
-	  sliceAln((const char **)AS, (char **)window, 1, length);
+	  sliceAln((const struct aln **)AS, (struct aln **)window, 1, length);
 	}
   
 	if (reverse==1){
-	  revAln((char **)window);
+	  revAln((struct aln **)window);
 	  strcpy(strand,"reverse");
 	} else {
 	  strcpy(strand,"forward");
 	}
-  
+
+	//printAln((const struct aln**)window);
+	
 	structure = (char *) space((unsigned) length+1);
-	min_en = alifold(window, structure);
+
+	for (i=0;window[i]!=NULL;i++){
+	  tmpAln[i]=window[i]->seq;
+	}
+	tmpAln[i]=NULL;
+
+
+
+	/* Convert all Us to Ts for RNAalifold. There is a slight
+	   difference in the results. During training we used alignments
+	   with Ts, so we use Ts here as well. */
+
+	for (i=0;i<n_seq;i++){
+	  j=0;
+	  while (window[i]->seq[j]){
+		window[i]->seq[j]=toupper(window[i]->seq[j]);
+		if (window[i]->seq[j]=='U') window[i]->seq[j]='T'; ++j;
+	  }
+	}
+	
+	min_en = alifold(tmpAln, structure);
 
 	sumZ=0;
 	sumMFE=0;
@@ -208,14 +252,18 @@ int main(int argc, char *argv[])
 	output=(char *)space(sizeof(char)*(length+16)*(n_seq+1)*3);
   
 	for (i=0;i<n_seq;i++){
-	  singleStruc = space(strlen(window[i])+1);
-	  woGapsSeq = space(strlen(window[i])+1);
+	  singleStruc = space(strlen(window[i]->seq)+1);
+	  woGapsSeq = space(strlen(window[i]->seq)+1);
 	  j=0;
-	  while (window[i][j]){
-		window[i][j]=toupper(window[i][j]);
-		if (window[i][j]=='T') window[i][j]='U';
-		if (window[i][j]!='-'){
-		  woGapsSeq[strlen(woGapsSeq)]=window[i][j];
+	  while (window[i]->seq[j]){
+		/* Convert all Ts to Us for RNAfold. There is a difference
+		   between the results. With U in the function call, we get
+		   the results as RNAfold gives on the command line. Since
+		   this variant was also used during training, we use it here
+		   as well. */
+		if (window[i]->seq[j]=='T') window[i]->seq[j]='U';
+		if (window[i]->seq[j]!='-'){
+		  woGapsSeq[strlen(woGapsSeq)]=window[i]->seq[j];
 		  woGapsSeq[strlen(woGapsSeq)]='\0';
 		}
 		++j;
@@ -227,7 +275,7 @@ int main(int argc, char *argv[])
 	  sumZ+=singleZ;
 	  sumMFE+=singleMFE;
 	  sprintf(output+strlen(output),">%s\n%s\n%s ( %6.2f)\n",
-			  names[i],woGapsSeq,singleStruc,singleMFE);
+			  window[i]->name,woGapsSeq,singleStruc,singleMFE);
 	  free(woGapsSeq);
 	  free(singleStruc);
 	}
@@ -235,18 +283,18 @@ int main(int argc, char *argv[])
 	{
 	  int i; double s=0;
 	  extern int eos_debug;
-	  eos_debug=-1; /* shut off warnings about nonstandard pairs */
+ 	  eos_debug=-1; /* shut off warnings about nonstandard pairs */
 	  for (i=0; window[i]!=NULL; i++) 
-		s += energy_of_struct(window[i], structure);
+		s += energy_of_struct(window[i]->seq, structure);
 	  real_en = s/i;
 	}
 
-	string = consensus((const char **) window);
+	string = consensus((const struct aln**) window);
 	sprintf(output+strlen(output),
 			">consensus\n%s\n%s (%6.2f = %6.2f + %6.2f) \n",
 			string, structure, min_en, real_en, min_en-real_en );
 
-	id=meanPairID((const char **)window);
+	id=meanPairID((const struct aln**)window);
 	z=sumZ/n_seq;
 	sci=min_en/(sumMFE/n_seq);
 
@@ -282,15 +330,19 @@ int main(int argc, char *argv[])
 	fprintf(out,"%s//\n\n",output);
 	
 	fflush(out);
-	
+
+	free(structure);
 	free(output);
-	freeAln((char **)AS);
-	freeAln((char **)names);
-	freeAln((char **)window);
+	freeAln((struct aln **)AS);
+	freeAln((struct aln **)window);
 	
 
   }
 
+  if (countAln==0){
+	nrerror("ERROR: Empty alignment file\n");
+  }
+  
   svm_destroy_model(decision_model);
   regression_svm_free();
   
@@ -312,30 +364,23 @@ int main(int argc, char *argv[])
  ********************************************************************/
 
 
-PRIVATE int read_clustal(FILE *clust, char *alignedSeqs[], char *names[]) {
+PRIVATE int read_clustal(FILE *clust, struct aln *alignedSeqs[]) {
 
   char *line, name[100]={'\0'}, *seq;
   int  n, nn=0, num_seq = 0;
-   
-  if ((line=get_line(clust)) == NULL) {
-	//fprintf(stderr, "ERROR: Empty CLUSTAL file\n");
+
+  if (feof(clust)){
 	return 0;
   }
-
   
-  while (((n=strlen(line))<4) || isspace((int)line[0])){
-	free(line); line = get_line(clust);
-  }
-
- 
-  if (strncmp(line,"CLUSTAL", 7) !=0) {
-	fprintf(stderr, "ERROR: No CLUSTAL file\n");
-	free(line); return 0;
-  }
-  free(line);
   line = get_line(clust);
 
-  while ((line!=NULL) && (strcmp(line,"//")!=0)) {
+  while (line!=NULL) {
+
+	if (strncmp(line,"CLUSTAL", 7)==0) {
+	  break;
+	}
+	
 	if (((n=strlen(line))<4) || isspace((int)line[0])) {
 	  /* skip non-sequence line */
 	  free(line); line = get_line(clust);
@@ -346,48 +391,132 @@ PRIVATE int read_clustal(FILE *clust, char *alignedSeqs[], char *names[]) {
 	seq = (char *) space( (n+1)*sizeof(char) );
 	sscanf(line,"%99s %s", name, seq);
 	if (nn == num_seq) { /* first time */
-	  names[nn] = strdup(name);
-	  alignedSeqs[nn] = strdup(seq);
+	  //names[nn] = strdup(name);
+	  //alignedSeqs[nn] = strdup(seq);
+
+	  alignedSeqs[nn]=createAlnEntry(strdup(name),strdup(seq));
+	  
+	  
 	}
 	else {
-	  if (strcmp(name, names[nn])!=0) {
+	  if (strcmp(name, alignedSeqs[nn]->name)!=0) {
 		/* name doesn't match */
-		fprintf(stderr,
-				"ERROR: Inconsitent sequence names in CLUSTAL file)\n");
 		free(line); free(seq);
+		nrerror("ERROR: Inconsistent sequence names in CLUSTAL file");
 		return 0;
 	  }
-	  alignedSeqs[nn] = (char *)
-		xrealloc(alignedSeqs[nn], strlen(seq)+strlen(alignedSeqs[nn])+1);
-	  strcat(alignedSeqs[nn], seq);
+	  alignedSeqs[nn]->seq = (char *)
+		xrealloc(alignedSeqs[nn]->seq, strlen(seq)+strlen(alignedSeqs[nn]->seq)+1);
+	  strcat(alignedSeqs[nn]->seq, seq);
 	}
 	nn++;
 	if (nn>num_seq) num_seq = nn;
 	free(seq);
 	free(line);
 	if (num_seq>=MAX_NUM_NAMES) {
-	  fprintf(stderr, "ERROR: Too many sequences in CLUSTAL file\n");
+	  nrerror("ERROR: Too many sequences in CLUSTAL file");
 	  return 0;
 	}
 	line = get_line(clust);
   }
 
   alignedSeqs[num_seq] = NULL;
-  names[num_seq] = NULL;
+
   if (num_seq == 0) {
-	fprintf(stderr, "ERROR: No sequences found in CLUSTAL file\n");
 	return 0;
   }
-  n = strlen(alignedSeqs[0]); 
+  n = strlen(alignedSeqs[0]->seq); 
   for (nn=1; nn<num_seq; nn++) {
-	if (strlen(alignedSeqs[nn])!=n) {
+	if (strlen(alignedSeqs[nn]->seq)!=n) {
 	  fprintf(stderr, "ERROR: Sequences are of unequal length.\n");
 	  return 0;
 	}
   }
   return num_seq;
 }
- 
+
+/********************************************************************
+ *                                                                  *
+ * read_maf -- read MAF formatted file                              *
+ *                                                                  *
+ ********************************************************************
+ *                                                                  *
+ * clust ... filehandle pointing to the file to be read             *
+ * alignedSeqs ... array of strings where read sequences are stored *
+ * names ... array of sequence names                                *
+ *                                                                  *
+ * Returns number of sequences read                                 *
+ *                                                                  *
+ ********************************************************************/
+
+
+PRIVATE int read_maf(FILE *clust, struct aln *alignedSeqs[]) {
+
+  char *line, name[100]={'\0'}, *seq;
+  int num_seq = 0;
+  char** fields;
+  int n,nn;
+
+  if (feof(clust)){
+	return 0;
+  }
+  
+  while ((line=get_line(clust))!=NULL) {
+
+	fields=splitFields(line);
+
+	/* Skip empty (=only whitespace) lines */
+	if (fields==NULL){
+	  free(line);
+	  continue;
+	}
+
+	/* Skip comment (#) lines */
+	if (fields[0][0]=='#'){
+	  free(line);
+	  freeFields(fields);
+	  continue;
+	}
+
+	if (fields[0][0]=='s' && fields[0][1]=='\0'){
+
+	  n=0;
+	  while (fields[n]!=NULL){
+		n++;
+	  }
+	  if (n!=7){
+		nrerror("ERROR: Invalid MAF format (number of fields in 's' line not correct)");
+	  }
+	  
+	  alignedSeqs[num_seq++]=createAlnEntry(strdup(fields[1]),strdup(fields[6]));
+	  free(line);
+	  freeFields(fields);
+	  continue;
+	}
+
+	if (fields[0][0]=='a' && fields[0][1]=='\0'){
+	  free(line);
+	  freeFields(fields);
+	  break;
+	}
+  }
+
+  alignedSeqs[num_seq] = NULL;
+
+  n = strlen(alignedSeqs[0]->seq); 
+  for (nn=1; nn<num_seq; nn++) {
+	if (strlen(alignedSeqs[nn]->seq)!=n) {
+	  nrerror("ERROR: Sequences are of unequal length.");
+	  return 0;
+	}
+  }
+  return num_seq;
+}
+
+
+
+
+
 
 /********************************************************************
  *                                                                  *
@@ -401,15 +530,15 @@ PRIVATE int read_clustal(FILE *clust, char *alignedSeqs[], char *names[]) {
  *                                                                  *
  ********************************************************************/
 
-PRIVATE char *consensus(const char *AS[]) {
+PRIVATE char *consensus(const struct aln *AS[]) {
   char *string;
   int i,n;
-  n = strlen(AS[0]);
+  n = strlen(AS[0]->seq);
   string = (char *) space((n+1)*sizeof(char));
   for (i=0; i<n; i++) {
     int s,c,fm, freq[8] = {0,0,0,0,0,0,0,0};
     for (s=0; AS[s]!=NULL; s++) 
-      freq[encode_char(AS[s][i])]++;
+      freq[encode_char(AS[s]->seq[i])]++;
     for (s=c=fm=0; s<8; s++) /* find the most frequent char */
       if (freq[s]>fm) {c=s, fm=freq[c];}
     if (s>4) s++; /* skip T */
@@ -432,20 +561,20 @@ PRIVATE char *consensus(const char *AS[]) {
  ********************************************************************/
 
 
-PRIVATE double meanPairID(const char *AS[]) {
+PRIVATE double meanPairID(const struct aln *AS[]) {
 
   int i,j,k,matches,pairs,length;
 
   matches=0;
   pairs=0;
 
-  length=strlen(AS[0]);
+  length=strlen(AS[0]->seq);
   
   for (i=0;AS[i]!=NULL;i++){
 	for (j=i+1;AS[j]!=NULL;j++){
 	  for (k=0;k<length;k++){
-		if ((AS[i][k]!='-') || (AS[j][k]!='-')){
-		  if (AS[i][k]==AS[j][k]){
+		if ((AS[i]->seq[k]!='-') || (AS[j]->seq[k]!='-')){
+		  if (AS[i]->seq[k]==AS[j]->seq[k]){
 			matches++;
 		  }
 		  pairs++;
@@ -468,17 +597,17 @@ PRIVATE double meanPairID(const char *AS[]) {
  *                                                                  *
  ********************************************************************/
 
-void revAln(char *AS[]) {
+void revAln(struct aln *AS[]) {
 
   int i,j,length;
   char *tmp;
   char letter;
-  length=strlen(AS[0]);
+  length=strlen(AS[0]->seq);
   
   for (i=0;AS[i]!=NULL;i++){
 	tmp = (char *) space((unsigned) length+1);
 	for (j=length-1;j>=0;j--){
-	  letter=AS[i][j];
+	  letter=AS[i]->seq[j];
 	  switch(letter){
 		case 'T': letter='A'; break;
 		case 'U': letter='A'; break;
@@ -489,7 +618,7 @@ void revAln(char *AS[]) {
 	  tmp[length-j-1]=letter;
 	}
 	tmp[length]='\0';
-	strcpy(AS[i],tmp);
+	strcpy(AS[i]->seq,tmp);
 	free(tmp);
 	tmp=NULL;
   }
@@ -507,16 +636,16 @@ void revAln(char *AS[]) {
  *                                                                  *
  ********************************************************************/
 
-void sliceAln(const char *sourceAln[], char *destAln[],
+void sliceAln(const struct aln *sourceAln[], struct aln *destAln[],
 			  int from, int to){
 
   int i;
   char *slice;
-
+ 
   for (i=0;sourceAln[i]!=NULL;i++){
 	slice=(char *) space((unsigned) (to-from+2));
-	strncpy(slice,sourceAln[i]+from-1,(to-from+1));
-	destAln[i]=slice;
+	strncpy(slice,(sourceAln[i]->seq)+from-1,(to-from+1));
+	destAln[i]=createAlnEntry(strdup(sourceAln[i]->name),slice);
   }
   destAln[i]=NULL;
 }
@@ -527,11 +656,11 @@ void sliceAln(const char *sourceAln[], char *destAln[],
  *                                                                  *
  ********************************************************************/
 
-PRIVATE void freeAln(char *AS[]){
+PRIVATE void freeAln(struct aln *AS[]){
 
   int i;
   for (i=0;AS[i]!=NULL;i++){
-	free(AS[i]);
+	freeAlnEntry(AS[i]);
   }
   AS=NULL;
 }
@@ -580,6 +709,179 @@ PRIVATE void classify(double* prob, double* decValue,
   *prob=value[0];
   
   
+}
+
+PRIVATE struct aln* createAlnEntry(char* name, char* seq){
+
+  struct aln* entry;
+
+  entry=(struct aln*)space(sizeof(struct aln));
+
+  entry->name=name;
+  entry->seq=seq;
+
+  return entry;
+}
+
+PRIVATE void freeAlnEntry(struct aln* entry){
+
+  free(entry->name);
+  free(entry->seq);
+  free(entry);
+ 
+}
+
+
+PRIVATE void printAln(const struct aln* AS[]){
+  int i;
+  for (i=0;AS[i]!=NULL;i++){
+	printf("%s %s\n",AS[i]->name,AS[i]->seq);
+  }
+}
+
+PRIVATE int checkFormat(FILE *file){
+
+  char *line; 
+  char** fields;
+  
+  while ((line=get_line(file)) != NULL){
+
+	fields=splitFields(line);
+
+	/* Skip empty (=only whitespace) and comments */
+
+	if (fields==NULL){
+	  free(line);
+	  freeFields(fields);
+	  continue;
+	}
+	
+	if (fields[0][0]=='#'){
+	  free(line);
+	  freeFields(fields);
+	  continue;
+	}
+
+	/* Identify "CLUSTAL" header => CLUSTAL*/
+	if (strcmp(fields[0],"CLUSTAL")==0){
+	  free(line);
+	  freeFields(fields);
+	  return(CLUSTAL);
+	}
+
+	/* Identitfy "a" header => MAF */
+	if (fields[0][0]=='a' && fields[0][1]=='\0'){
+	  free(line);
+	  freeFields(fields);
+	  return(MAF);
+	}
+
+	/* Unknown format if the first non-empty, non-command data in the
+	   file is non of the above */
+	free(line);
+	freeFields(fields);
+	return(0);
+  }
+
+  free(line);
+  nrerror("ERROR: Empty alignment file\n");
+   
+}
+
+
+
+PRIVATE char** splitFields(char* string){
+
+  char c;
+  char* currField;
+  char** output=NULL;
+  int* seps;
+  int nSep;
+  int nField=0;
+  int i=0;
+
+  if (strlen(string)==0 || string==NULL){
+	return NULL;
+  }
+
+  /* First find all characters which are whitespaces and store the
+	 positions in the array seps */
+    
+  seps=(int *)space(sizeof(int));
+  seps[0]=-1;
+  nSep=1;
+  
+  while ((c=string[i])!='\0' && (c!='\n')){
+	if (isspace(c)){
+	  seps=(int*)xrealloc(seps,sizeof(int)*(nSep+1));
+	  seps[nSep++]=i;
+	}
+	i++;
+  }
+
+  seps=(int*)xrealloc(seps,sizeof(int)*(nSep+1));
+  seps[nSep]=strlen(string);
+
+
+  /* Then go through all intervals in between of two whitespaces (or
+	 end or start of string) and store the fields in the array
+	 "output"; if there are two adjacent whitespaces this is ignored
+	 resulting in a behaviour like "split /\s+/" in perl */
+  
+  for (i=0;i<nSep;i++){
+
+	int start=seps[i];
+	int stop=seps[i+1];
+	int length=(stop-start);
+	int notSpace,j;
+
+	
+	currField=(char *)space(sizeof(char)*(length+1));
+	strncpy(currField,string+start+1,length-1);
+	currField[length]='\0';
+
+	/* check if field is not only whitespace */
+	notSpace=0;
+	j=0;
+	while (c=currField[j]!='\0'){
+	  if (!isspace(c)){
+		notSpace=1;
+		break;
+	  }
+	}
+
+	if (notSpace){
+	  output=(char**)xrealloc(output,sizeof(char**)*(nField+1));
+	  output[nField++]=currField;
+	  currField=NULL;
+	} else {
+	  free(currField);
+	  currField=NULL;
+	}
+
+	//printf("%s|\n",output[nField-1]);
+  }
+
+  if (nField==0){
+	return NULL;
+  }
+
+  
+  output=(char**)xrealloc(output,sizeof(char**)*(nField+1));
+  output[nField]=NULL;
+  
+  free(seps);
+  return output;
+  
+}
+
+PRIVATE void freeFields(char** fields){
+
+  int i=0;
+  while (fields[i]!=NULL){
+	free(fields[i++]);
+  }
+  free(fields);
 }
 
 
