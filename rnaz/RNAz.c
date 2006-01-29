@@ -7,7 +7,7 @@
  *                                                                   *
  *	          c Stefan Washietl, Ivo L Hofacker                      *
  *                                                                   *
- *	   $Id: RNAz.c,v 1.7 2006-01-09 18:32:52 wash Exp $              *
+ *	   $Id: RNAz.c,v 1.8 2006-01-29 18:21:08 wash Exp $              *
  *                                                                   *
  *********************************************************************/
 #include "config.h"
@@ -23,56 +23,25 @@
 #include "pair_mat.h"
 #include "alifold.h"
 #include "zscore.h"
+#include "rnaz_utils.h"
 #include "svm.h"
 #include "svm_helper.h"
+#include "cmdline.h"
+#include "strand.h"
 
-#define PRIVATE static
-#define MAX_NUM_NAMES 500
-#define MIN2(A, B) ((A) < (B) ? (A) : (B))
-
-enum alnFormat {UNKNOWN=0, CLUSTAL=1, MAF=2};
-
-struct aln {
-  char *name;
-  char *seq;
-};
-
+#define IN_RANGE(LOWER,VALUE,UPPER) ((VALUE <= UPPER) && (VALUE >= LOWER))
 
 PRIVATE void usage(void);
 PRIVATE void help(void);
 PRIVATE void version(void);
-
-PRIVATE int read_clustal(FILE *clust,
-						 struct aln *alignedSeqs[]);
-
-PRIVATE int read_maf(FILE *clust,
-						 struct aln *alignedSeqs[]);
-
-
-PRIVATE char *consensus(const struct aln *AS[]);
-
-PRIVATE double meanPairID(const struct aln *AS[]);
-
-PRIVATE void revAln(struct aln *AS[]);
-
-PRIVATE void sliceAln(const struct aln *sourceAln[], struct aln *destAln[],
-					  int from, int to);
-
-PRIVATE void freeAln(struct aln *AS[]);
-
 PRIVATE void classify(double* prob, double* decValue,
 					  struct svm_model* decision_model,
 					  double id,int n_seq, double z,double sci);
+PRIVATE void warning(char* string, double id,int n_seq, double z,double sci,
+					 struct aln *AS[]);
 
-PRIVATE struct aln* createAlnEntry(char* name, char* seq); 
-PRIVATE void freeAlnEntry(struct aln* entry);
-PRIVATE void printAln(const struct aln* AS[]);
 
-PRIVATE int checkFormat(FILE *file);
-
-PRIVATE char** splitFields(char* string);
-PRIVATE void freeFields(char** fields);
-
+enum {FORWARD=1, REVERSE=2};
 
 /********************************************************************
  *                                                                  *
@@ -94,7 +63,6 @@ int main(int argc, char *argv[])
   int to=-1;
 
   FILE *clust_file=stdin; /* Input file */
-  char  *outFile=NULL;
   FILE *out=stdout; /* Output file */
 
   struct aln *AS[MAX_NUM_NAMES];     
@@ -105,57 +73,92 @@ int main(int argc, char *argv[])
   int length; /* length of alignment/window */
 
   char *structure=NULL;
-  char *singleStruc, *output,*woGapsSeq;
+  char *singleStruc,*gapStruc, *output,*woGapsSeq;
   char strand[8];
+  char warningString[1000];
   char *string=NULL;
-  double singleMFE,sumMFE,singleZ,sumZ,z,sci,id,decValue,prob;
+  double singleMFE,sumMFE,singleZ,sumZ,z,sci,id,decValue,prob,comb;
   double min_en, real_en;
-  int i,j,r,countAln;
+  int i,j,k,l,ll,r,countAln;
   int (*readFunction)(FILE *clust,struct aln *alignedSeqs[]);
+  char** lines=NULL;
+  int directions[3]={FORWARD,0,0};
+  int currDirection;
+  struct gengetopt_args_info args;
 
+  double meanMFE_fwd=0;
+  double consensusMFE_fwd=0;
+  double sci_fwd=0;
+  double z_fwd=0;
+  int strandGuess;
+  double strandProb,strandDec;
+  
+  if (cmdline_parser (argc, argv, &args) != 0){
+	usage();
+	exit(1);
+  }
+
+  if (args.help_given){
+	help();
+	exit(0);
+  }
+
+  if (args.version_given){
+	version();
+	exit(0);
+  }
+
+  if (args.outfile_given){
+	out = fopen(args.outfile_arg, "w");
+	if (out == NULL){
+	  fprintf(stderr, "ERROR: Can't open output file %s\n", args.outfile_arg);
+	  exit(1);
+	}
+  }
+
+  /* Strand prediction implies both strands scored */
+  if (args.predict_strand_flag){
+	args.both_strands_flag=1;
+  }
+  
+  
+  if (args.forward_flag && !args.reverse_flag){
+	directions[0]=FORWARD;
+	directions[1]=directions[2]=0;
+  }
+  if (!args.forward_flag && args.reverse_flag){
+	directions[0]=REVERSE;
+	directions[1]=directions[2]=0;
+  }
+  if ((args.forward_flag && args.reverse_flag) || args.both_strands_flag){
+	directions[0]=FORWARD;
+	directions[1]=REVERSE;
+  }
+
+  if (args.window_given){
+	if (sscanf(args.window_arg,"%d-%d",&from,&to)!=2){
+	  nrerror("ERROR: Invalid --window/-w command. "
+			  "Use it like '--window 100-200'\n");
+	}
+	
+	printf("from:%d,to:%d\n",from,to);
+  }
+
+  
+  if (args.inputs_num>=1){
+	clust_file = fopen(args.inputs[0], "r"); 
+	if (clust_file == NULL){
+	  fprintf(stderr, "ERROR: Can't open input file %s\n", args.inputs[0]);
+	  exit(1);
+	}
+  }
+
+
+ 
   /* Global RNA package variables */
   do_backtrack = 1; 
   dangles=2;
 
-  
-  for (i=1; i<argc; i++) {
-    if (argv[i][0]=='-') {
-      switch ( argv[i][1] )	{
-	  case 'r': reverse=1;break;
-	  case 'f':
-		r=sscanf(argv[++i], "%d", &from);
-		if (r!=1) usage();
-		break;
-	  case 't':
-		r=sscanf(argv[++i], "%d", &to);
-		if (r!=1) usage();
-		break;
-	   case 'o':
-		 outFile = argv[++i];
-		 if (outFile[0]=='-'){
-		   usage();
-		 }
-		 out = fopen(outFile, "w");
-		 if (out == NULL){
-		   nrerror("Could not open output file");
-		   exit(1);
-		 }
-		 break;
-	  case 'v':showVersion=1;break;
-	  case 'h':showHelp=1;break;
-	  default: usage();
-	  }
-    }
-    else { /* doesn't start with '-' should be filename */ 
-      if (i!=argc-1) usage();
-      clust_file = fopen(argv[i], "r");
-      if (clust_file == NULL) {
-		fprintf(stderr, "ERROR: Can't open %s\n", argv[i]);
-		usage();
-      }
-    }
-  }
-  
   switch(checkFormat(clust_file)){
 
   case CLUSTAL:
@@ -166,30 +169,18 @@ int main(int argc, char *argv[])
 	break;
   }
 
-  if (showVersion==1) version();
-  if (showHelp==1) help();
-  
-  modelDir=getenv("RNAZDIR");
-
-
+  /* modelDir=getenv("RNAZDIR");
   if (modelDir==NULL){
-	nrerror("ERROR: Could not find models. You have to set the RNAZDIR"
-			" enviroment variable pointing to the model files!\n");
-  }
-  
+  nrerror("ERROR: Could not find models. You have to set the RNAZDIR"
+          " enviroment variable pointing to the model files!\n");
+  }*/
 
-  regression_svm_init(modelDir);
-  
-  decision_model=get_decision_model(modelDir);
-  
-
-  if (decision_model==NULL){	
-	nrerror("ERROR: Could not find decision-model. You have to set "			
-			"the RNAZDIR enviroment variable pointing to the model files!\n");	
-  }
-
+ 
+  decision_model=get_decision_model(NULL);
+  regression_svm_init(NULL);
   
   countAln=0;
+
   while ((n_seq=readFunction(clust_file, AS))!=0){
 	countAln++;
 	length = (int) strlen(AS[0]->seq);
@@ -197,14 +188,11 @@ int main(int argc, char *argv[])
 	/* if a slice is specified by the user */
   
 	if ((from!=-1 || to!=-1) && (countAln==1)){
-	  if (((from!=-1) && (to==-1)) || ((from==-1) && (to!=-1))){
-		nrerror("ERROR: You have to set both -f and -t parameters"
-				" to score a slice of the alignment.\n");
-	  }
+	  
 	  if ((from>=to)||(from<=0)||(to>length)){
-		nrerror("ERROR: -f and/or -t parameters out of range"
-				" (no reasonable slice specified)\n");
+		nrerror("ERROR: Invalid window range given.\n");
 	  }
+	  
 	  sliceAln((const struct aln**)AS, (struct aln **)window, from, to);
 	  length=to-from+1;
 	} else { /* take complete alignment */
@@ -213,130 +201,205 @@ int main(int argc, char *argv[])
 	  to=length;
 	  sliceAln((const struct aln **)AS, (struct aln **)window, 1, length);
 	}
-  
-	if (reverse==1){
-	  revAln((struct aln **)window);
-	  strcpy(strand,"reverse");
-	} else {
-	  strcpy(strand,"forward");
-	}
 
-	//printAln((const struct aln**)window);
-	
-	structure = (char *) space((unsigned) length+1);
-
-	for (i=0;window[i]!=NULL;i++){
-	  tmpAln[i]=window[i]->seq;
-	}
-	tmpAln[i]=NULL;
-
-
-
-	/* Convert all Us to Ts for RNAalifold. There is a slight
-	   difference in the results. During training we used alignments
-	   with Ts, so we use Ts here as well. */
+	 /* Convert all Us to Ts for RNAalifold. There is a slight
+		 difference in the results. During training we used alignments
+		 with Ts, so we use Ts here as well. */
 
 	for (i=0;i<n_seq;i++){
 	  j=0;
 	  while (window[i]->seq[j]){
 		window[i]->seq[j]=toupper(window[i]->seq[j]);
-		if (window[i]->seq[j]=='U') window[i]->seq[j]='T'; ++j;
-	  }
-	}
-	
-	min_en = alifold(tmpAln, structure);
-
-	sumZ=0;
-	sumMFE=0;
-
-	output=(char *)space(sizeof(char)*(length+16)*(n_seq+1)*3);
-  
-	for (i=0;i<n_seq;i++){
-	  singleStruc = space(strlen(window[i]->seq)+1);
-	  woGapsSeq = space(strlen(window[i]->seq)+1);
-	  j=0;
-	  while (window[i]->seq[j]){
-		/* Convert all Ts to Us for RNAfold. There is a difference
-		   between the results. With U in the function call, we get
-		   the results as RNAfold gives on the command line. Since
-		   this variant was also used during training, we use it here
-		   as well. */
-		if (window[i]->seq[j]=='T') window[i]->seq[j]='U';
-		if (window[i]->seq[j]!='-'){
-		  woGapsSeq[strlen(woGapsSeq)]=window[i]->seq[j];
-		  woGapsSeq[strlen(woGapsSeq)]='\0';
-		}
+		if (window[i]->seq[j]=='U') window[i]->seq[j]='T';
 		++j;
 	  }
+	}
+	
+	k=0;
+	while ((currDirection=directions[k++])!=0){
 	  
-	  singleMFE = fold(woGapsSeq, singleStruc);
-	  singleZ=mfe_zscore(woGapsSeq,singleMFE);
+	  if (currDirection==REVERSE){
+		revAln((struct aln **)window);
+		strcpy(strand,"reverse");
+	  } else {
+		strcpy(strand,"forward");
+	  }
+
+	  structure = (char *) space((unsigned) length+1);
+
+	  for (i=0;window[i]!=NULL;i++){
+		tmpAln[i]=window[i]->seq;
+	  }
+	  tmpAln[i]=NULL;
+
+	  min_en = alifold(tmpAln, structure);
+
+	  comb=combPerPair(window,structure);
 	  
-	  sumZ+=singleZ;
-	  sumMFE+=singleMFE;
-	  sprintf(output+strlen(output),">%s\n%s\n%s ( %6.2f)\n",
-			  window[i]->name,woGapsSeq,singleStruc,singleMFE);
-	  free(woGapsSeq);
-	  free(singleStruc);
+	  sumZ=0;
+	  sumMFE=0;
+
+	  output=(char *)space(sizeof(char)*(length+16)*(n_seq+1)*3);
+  
+	  for (i=0;i<n_seq;i++){
+		singleStruc = space(strlen(window[i]->seq)+1);
+		woGapsSeq = space(strlen(window[i]->seq)+1);
+		j=0;
+		while (window[i]->seq[j]){
+		  /* Convert all Ts to Us for RNAfold. There is a difference
+			 between the results. With U in the function call, we get
+			 the results as RNAfold gives on the command line. Since
+			 this variant was also used during training, we use it here
+			 as well. */
+		  if (window[i]->seq[j]=='T') window[i]->seq[j]='U';
+		  if (window[i]->seq[j]!='-'){
+			woGapsSeq[strlen(woGapsSeq)]=window[i]->seq[j];
+			woGapsSeq[strlen(woGapsSeq)]='\0';
+		  }
+		  ++j;
+		}
+	  
+		singleMFE = fold(woGapsSeq, singleStruc);
+		singleZ=mfe_zscore(woGapsSeq,singleMFE);
+	  
+		sumZ+=singleZ;
+		sumMFE+=singleMFE;
+
+		if (window[1]->strand!='?' && !args.window_given){
+		  sprintf(output+strlen(output),
+				  ">%s %d %d %c %d\n",
+				  window[i]->name,window[i]->start,
+				  window[i]->length,window[i]->strand,
+				  window[i]->fullLength);
+		} else {
+		  sprintf(output+strlen(output),">%s\n",window[i]->name);
+		}
+
+		if (args.show_gaps_flag){
+
+		  gapStruc= (char *) space(sizeof(char)*(strlen(window[i]->seq)+1));
+
+		  l=ll=0;
+
+		  while (window[i]->seq[l]!='\0'){
+			if (window[i]->seq[l]!='-'){
+			  gapStruc[l]=singleStruc[ll];
+			  l++;
+			  ll++;
+			} else {
+			  gapStruc[l]='-';
+			  l++;
+			}
+		  }
+		  		  
+		  sprintf(output+strlen(output),"%s\n%s ( %6.2f)\n",
+				  window[i]->seq,gapStruc,singleMFE);
+		  
+		  
+		} else {
+		  sprintf(output+strlen(output),"%s\n%s ( %6.2f)\n",
+				  woGapsSeq,singleStruc,singleMFE);
+		}
+		free(woGapsSeq);
+		free(singleStruc);
+	  }
+
+	  {
+		int i; double s=0;
+		extern int eos_debug;
+		eos_debug=-1; /* shut off warnings about nonstandard pairs */
+		for (i=0; window[i]!=NULL; i++) 
+		  s += energy_of_struct(window[i]->seq, structure);
+		real_en = s/i;
+	  }
+
+	  string = consensus((const struct aln**) window);
+	  sprintf(output+strlen(output),
+			  ">consensus\n%s\n%s (%6.2f = %6.2f + %6.2f) \n",
+			  string, structure, min_en, real_en, min_en-real_en );
+
+	  id=meanPairID((const struct aln**)window);
+	  z=sumZ/n_seq;
+	  sci=min_en/(sumMFE/n_seq);
+
+	  
+	  	  
+	  decValue=999;
+	  prob=0;
+	
+	  classify(&prob,&decValue,decision_model,id,n_seq,z,sci);
+
+	  if (args.cutoff_given){
+		if (prob<args.cutoff_arg){
+		  continue;
+		}
+	  }
+
+	  
+	  strcpy(warningString,"");
+
+	  warning(warningString,id,n_seq,z,sci,(struct aln **)window);
+	  
+
+	  fprintf(out,"\n###########################  RNAz "PACKAGE_VERSION"  #############################\n\n");
+	  fprintf(out," Sequences: %u\n", n_seq);
+
+	  if (args.window_given){
+		fprintf(out," Slice: %u to %u\n",from,to);
+	  }
+	  fprintf(out," Columns: %u\n",length);
+	  fprintf(out," Reading direction: %s\n",strand);
+	  fprintf(out," Mean pairwise identity: %6.2f\n", id);
+	  fprintf(out," Mean single sequence MFE: %6.2f\n", sumMFE/n_seq);
+	  fprintf(out," Consensus MFE: %6.2f\n",min_en);
+	  fprintf(out," Energy contribution: %6.2f\n",real_en);
+	  fprintf(out," Covariance contribution: %6.2f\n",min_en-real_en);
+	  fprintf(out," Combinations/Pair: %6.2f\n",comb);
+	  fprintf(out," Mean z-score: %6.2f\n",z);
+	  fprintf(out," Structure conservation index: %6.2f\n",sci);
+	  fprintf(out," SVM decision value: %6.2f\n",decValue);
+	  fprintf(out," SVM RNA-class probability: %6f\n",prob);
+	  if (prob>0.5){
+		fprintf(out," Prediction: RNA\n");
+	  }
+	  else {
+		fprintf(out," Prediction: OTHER\n");
+	  }
+	  fprintf(out,"%s",warningString);
+	  
+	  fprintf(out,"\n######################################################################\n\n");
+	
+	  fprintf(out,"%s",output);
+	
+	  fflush(out);
+
+	  free(structure);
+	  free(output);
+
+	  if (currDirection==FORWARD && args.predict_strand_flag){
+		meanMFE_fwd=sumMFE/n_seq;
+		consensusMFE_fwd=min_en;
+		sci_fwd=sci;
+		z_fwd=z;
+	  }
+
+	  if (currDirection==REVERSE && args.predict_strand_flag){
+
+		if (predict_strand(sci_fwd-sci, meanMFE_fwd-(sumMFE/n_seq),
+						   consensusMFE_fwd-min_en, z_fwd-z, n_seq, id, 
+						   &strandGuess, &strandProb, &strandDec, NULL)){
+		  if (strandGuess==1){
+			fprintf(out, "\n# Strand winner: forward (%.2f)\n",strandProb);
+		  } else {
+			fprintf(out, "\n# Strand winner: reverse (%.2f)\n",1-strandProb);
+		  }
+		} else {
+		  fprintf(out, "\n# WARNING: No strand prediction (values out of range)\n");
+		}
+	  }
 	}
-
-	{
-	  int i; double s=0;
-	  extern int eos_debug;
- 	  eos_debug=-1; /* shut off warnings about nonstandard pairs */
-	  for (i=0; window[i]!=NULL; i++) 
-		s += energy_of_struct(window[i]->seq, structure);
-	  real_en = s/i;
-	}
-
-	string = consensus((const struct aln**) window);
-	sprintf(output+strlen(output),
-			">consensus\n%s\n%s (%6.2f = %6.2f + %6.2f) \n",
-			string, structure, min_en, real_en, min_en-real_en );
-
-	id=meanPairID((const struct aln**)window);
-	z=sumZ/n_seq;
-	sci=min_en/(sumMFE/n_seq);
-
-	decValue=999;
-	prob=0;
-	
-	classify(&prob,&decValue,decision_model,id,n_seq,z,sci);
-
-	
-	fprintf(out,"\n###########################  RNAz "PACKAGE_VERSION"  #############################\n\n");
-	fprintf(out," Sequences: %u\n", n_seq);
-	fprintf(out," Slice: %u to %u\n",from,to);
-	fprintf(out," Columns: %u\n",length);
-	fprintf(out," Strand: %s\n",strand);
-	fprintf(out," Mean pairwise identity: %6.2f\n", id);
-	fprintf(out," Mean single sequence MFE: %6.2f\n", sumMFE/n_seq);
-	fprintf(out," Consensus MFE: %6.2f\n",min_en);
-	fprintf(out," Energy contribution: %6.2f\n",real_en);
-	fprintf(out," Covariance contribution: %6.2f\n",min_en-real_en);
-	fprintf(out," Mean z-score: %6.2f\n",z);
-	fprintf(out," Structure conservation index: %6.2f\n",sci);
-	fprintf(out," SVM decision value: %6.2f\n",decValue);
-	fprintf(out," SVM RNA-class probability: %6f\n",prob);
-	if (prob>0.5){
-	  fprintf(out," Prediction: RNA\n");
-	}
-	else {
-	  fprintf(out," Prediction: no RNA\n");
-	}
-	
-	fprintf(out,"\n######################################################################\n\n");
-	
-	fprintf(out,"%s//\n\n",output);
-	
-	fflush(out);
-
-	free(structure);
-	free(output);
 	freeAln((struct aln **)AS);
 	freeAln((struct aln **)window);
-	
-
   }
 
   if (countAln==0){
@@ -349,321 +412,6 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-/********************************************************************
- *                                                                  *
- * read_clustal -- read CLUSTAL W formatted file                    *
- *                                                                  *
- ********************************************************************
- *                                                                  *
- * clust ... filehandle pointing to the file to be read             *
- * alignedSeqs ... array of strings where read sequences are stored *
- * names ... array of sequence names                                *
- *                                                                  *
- * Returns number of sequences read                                 *
- *                                                                  *
- ********************************************************************/
-
-
-PRIVATE int read_clustal(FILE *clust, struct aln *alignedSeqs[]) {
-
-  char *line, name[100]={'\0'}, *seq;
-  int  n, nn=0, num_seq = 0;
-
-  if (feof(clust)){
-	return 0;
-  }
-  
-  line = get_line(clust);
-
-  while (line!=NULL) {
-
-	if (strncmp(line,"CLUSTAL", 7)==0) {
-	  break;
-	}
-	
-	if (((n=strlen(line))<4) || isspace((int)line[0])) {
-	  /* skip non-sequence line */
-	  free(line); line = get_line(clust);
-	  nn=0; /* reset seqence number */
-	  continue;
-	} 
-     
-	seq = (char *) space( (n+1)*sizeof(char) );
-	sscanf(line,"%99s %s", name, seq);
-	if (nn == num_seq) { /* first time */
-	  //names[nn] = strdup(name);
-	  //alignedSeqs[nn] = strdup(seq);
-
-	  alignedSeqs[nn]=createAlnEntry(strdup(name),strdup(seq));
-	  
-	  
-	}
-	else {
-	  if (strcmp(name, alignedSeqs[nn]->name)!=0) {
-		/* name doesn't match */
-		free(line); free(seq);
-		nrerror("ERROR: Inconsistent sequence names in CLUSTAL file");
-		return 0;
-	  }
-	  alignedSeqs[nn]->seq = (char *)
-		xrealloc(alignedSeqs[nn]->seq, strlen(seq)+strlen(alignedSeqs[nn]->seq)+1);
-	  strcat(alignedSeqs[nn]->seq, seq);
-	}
-	nn++;
-	if (nn>num_seq) num_seq = nn;
-	free(seq);
-	free(line);
-	if (num_seq>=MAX_NUM_NAMES) {
-	  nrerror("ERROR: Too many sequences in CLUSTAL file");
-	  return 0;
-	}
-	line = get_line(clust);
-  }
-
-  alignedSeqs[num_seq] = NULL;
-
-  if (num_seq == 0) {
-	return 0;
-  }
-  n = strlen(alignedSeqs[0]->seq); 
-  for (nn=1; nn<num_seq; nn++) {
-	if (strlen(alignedSeqs[nn]->seq)!=n) {
-	  fprintf(stderr, "ERROR: Sequences are of unequal length.\n");
-	  return 0;
-	}
-  }
-  return num_seq;
-}
-
-/********************************************************************
- *                                                                  *
- * read_maf -- read MAF formatted file                              *
- *                                                                  *
- ********************************************************************
- *                                                                  *
- * clust ... filehandle pointing to the file to be read             *
- * alignedSeqs ... array of strings where read sequences are stored *
- * names ... array of sequence names                                *
- *                                                                  *
- * Returns number of sequences read                                 *
- *                                                                  *
- ********************************************************************/
-
-
-PRIVATE int read_maf(FILE *clust, struct aln *alignedSeqs[]) {
-
-  char *line, name[100]={'\0'}, *seq;
-  int num_seq = 0;
-  char** fields;
-  int n,nn;
-
-  if (feof(clust)){
-	return 0;
-  }
-  
-  while ((line=get_line(clust))!=NULL) {
-
-	fields=splitFields(line);
-
-	/* Skip empty (=only whitespace) lines */
-	if (fields==NULL){
-	  free(line);
-	  continue;
-	}
-
-	/* Skip comment (#) lines */
-	if (fields[0][0]=='#'){
-	  free(line);
-	  freeFields(fields);
-	  continue;
-	}
-
-	if (fields[0][0]=='s' && fields[0][1]=='\0'){
-
-	  n=0;
-	  while (fields[n]!=NULL){
-		n++;
-	  }
-	  if (n!=7){
-		nrerror("ERROR: Invalid MAF format (number of fields in 's' line not correct)");
-	  }
-	  
-	  alignedSeqs[num_seq++]=createAlnEntry(strdup(fields[1]),strdup(fields[6]));
-	  free(line);
-	  freeFields(fields);
-	  continue;
-	}
-
-	if (fields[0][0]=='a' && fields[0][1]=='\0'){
-	  free(line);
-	  freeFields(fields);
-	  break;
-	}
-  }
-
-  alignedSeqs[num_seq] = NULL;
-
-  n = strlen(alignedSeqs[0]->seq); 
-  for (nn=1; nn<num_seq; nn++) {
-	if (strlen(alignedSeqs[nn]->seq)!=n) {
-	  nrerror("ERROR: Sequences are of unequal length.");
-	  return 0;
-	}
-  }
-  return num_seq;
-}
-
-
-
-
-
-
-/********************************************************************
- *                                                                  *
- * consensus -- Calculates consensus of alignment                   *
- *                                                                  *
- ********************************************************************
- *                                                                  *
- * AS ... array with sequences                                      *
- *                                                                  *
- * Returns string with consensus sequence                           *
- *                                                                  *
- ********************************************************************/
-
-PRIVATE char *consensus(const struct aln *AS[]) {
-  char *string;
-  int i,n;
-  n = strlen(AS[0]->seq);
-  string = (char *) space((n+1)*sizeof(char));
-  for (i=0; i<n; i++) {
-    int s,c,fm, freq[8] = {0,0,0,0,0,0,0,0};
-    for (s=0; AS[s]!=NULL; s++) 
-      freq[encode_char(AS[s]->seq[i])]++;
-    for (s=c=fm=0; s<8; s++) /* find the most frequent char */
-      if (freq[s]>fm) {c=s, fm=freq[c];}
-    if (s>4) s++; /* skip T */
-    string[i]=Law_and_Order[c];
-  }
-  return string;
-}
-
-
-/********************************************************************
- *                                                                  *
- * meanPairID -- Calculates mean pairwise identity of alignment     *
- *                                                                  *
- ********************************************************************
- *                                                                  *
- * AS ... array with sequences                                      *
- *                                                                  *
- * Returns mean pair ID in percent                                  *
- *                                                                  *
- ********************************************************************/
-
-
-PRIVATE double meanPairID(const struct aln *AS[]) {
-
-  int i,j,k,matches,pairs,length;
-
-  matches=0;
-  pairs=0;
-
-  length=strlen(AS[0]->seq);
-  
-  for (i=0;AS[i]!=NULL;i++){
-	for (j=i+1;AS[j]!=NULL;j++){
-	  for (k=0;k<length;k++){
-		if ((AS[i]->seq[k]!='-') || (AS[j]->seq[k]!='-')){
-		  if (AS[i]->seq[k]==AS[j]->seq[k]){
-			matches++;
-		  }
-		  pairs++;
-		}
-	  }
-	}
-  }
-
-  return (double)(matches)/pairs*100;
-  
-}
-
-/********************************************************************
- *                                                                  *
- * revAln -- Reverse complements sequences in an alignment          *
- *                                                                  *
- ********************************************************************
- *                                                                  *
- * AS ... array with sequences which is rev-complemented in place   *
- *                                                                  *
- ********************************************************************/
-
-void revAln(struct aln *AS[]) {
-
-  int i,j,length;
-  char *tmp;
-  char letter;
-  length=strlen(AS[0]->seq);
-  
-  for (i=0;AS[i]!=NULL;i++){
-	tmp = (char *) space((unsigned) length+1);
-	for (j=length-1;j>=0;j--){
-	  letter=AS[i]->seq[j];
-	  switch(letter){
-		case 'T': letter='A'; break;
-		case 'U': letter='A'; break;
-		case 'C': letter='G'; break;
-		case 'G': letter='C'; break;
-		case 'A': letter='U'; break;
-	  }
-	  tmp[length-j-1]=letter;
-	}
-	tmp[length]='\0';
-	strcpy(AS[i]->seq,tmp);
-	free(tmp);
-	tmp=NULL;
-  }
-}
-
-/********************************************************************
- *                                                                  *
- * sliceAln -- Gets a slice of an alignment                         *
- *                                                                  *
- ********************************************************************
- *                                                                  *
- * sourceAln ... array with sequences of source alignment           *
- * destAln   ... pointer to array where slice is stored             *
- * from, to  ... specifies slice, first column is column 1          *
- *                                                                  *
- ********************************************************************/
-
-void sliceAln(const struct aln *sourceAln[], struct aln *destAln[],
-			  int from, int to){
-
-  int i;
-  char *slice;
- 
-  for (i=0;sourceAln[i]!=NULL;i++){
-	slice=(char *) space((unsigned) (to-from+2));
-	strncpy(slice,(sourceAln[i]->seq)+from-1,(to-from+1));
-	destAln[i]=createAlnEntry(strdup(sourceAln[i]->name),slice);
-  }
-  destAln[i]=NULL;
-}
-
-/********************************************************************
- *                                                                  *
- * freeAln -- Frees memory of alignment array                       *
- *                                                                  *
- ********************************************************************/
-
-PRIVATE void freeAln(struct aln *AS[]){
-
-  int i;
-  for (i=0;AS[i]!=NULL;i++){
-	freeAlnEntry(AS[i]);
-  }
-  AS=NULL;
-}
 
 
 
@@ -711,178 +459,89 @@ PRIVATE void classify(double* prob, double* decValue,
   
 }
 
-PRIVATE struct aln* createAlnEntry(char* name, char* seq){
+/*Hardcoded limits a more sophisticated data-model for meta-model information should be
+  considered*/
 
-  struct aln* entry;
+PRIVATE void warning(char* string, double id,int n_seq, double z,double sci,
+					 struct aln *AS[]){
 
-  entry=(struct aln*)space(sizeof(struct aln));
+  double GC,A,C;
+  int i,j,length,n_A,n_C,n_T,n_G;
+  char *seq;
 
-  entry->name=name;
-  entry->seq=seq;
+  if (id>100.0) {
+	strcpy(string," WARNING: Mean pairwise identity too large.\n");
+	string+=strlen(string);
+  }
 
-  return entry;
-}
+  if (id<52.35) {
+	strcpy(string," WARNING: Mean pairwise identity too low.\n");
+	string+=strlen(string);
+  }
 
-PRIVATE void freeAlnEntry(struct aln* entry){
+  if (n_seq<2) {
+	strcpy(string," WARNING: Too few sequences in alignment.\n");
+	string+=strlen(string);
+  }
+  
+  if (n_seq>6) {
+	strcpy(string," WARNING: Too many sequences in alignment.\n");
+	string+=strlen(string);
+  }
 
-  free(entry->name);
-  free(entry->seq);
-  free(entry);
- 
-}
+  if (!IN_RANGE(-7.87,z,2.76)){
+	strcpy(string," WARNING: Mean z-score out of range.\n");
+	string+=strlen(string);
+  }
+  
+  if (!IN_RANGE(0,sci,1.23)){
+	strcpy(string," WARNING: Structure conservation index out of range.\n");
+	string+=strlen(string);
+  }
 
-
-PRIVATE void printAln(const struct aln* AS[]){
-  int i;
   for (i=0;AS[i]!=NULL;i++){
-	printf("%s %s\n",AS[i]->name,AS[i]->seq);
-  }
-}
+	seq=AS[i]->seq;
 
-PRIVATE int checkFormat(FILE *file){
-
-  char *line; 
-  char** fields;
-  
-  while ((line=get_line(file)) != NULL){
-
-	fields=splitFields(line);
-
-	/* Skip empty (=only whitespace) and comments */
-
-	if (fields==NULL){
-	  free(line);
-	  freeFields(fields);
-	  continue;
-	}
+	//printf("SEQ: %s\n",seq);
 	
-	if (fields[0][0]=='#'){
-	  free(line);
-	  freeFields(fields);
-	  continue;
-	}
-
-	/* Identify "CLUSTAL" header => CLUSTAL*/
-	if (strcmp(fields[0],"CLUSTAL")==0){
-	  free(line);
-	  freeFields(fields);
-	  return(CLUSTAL);
-	}
-
-	/* Identitfy "a" header => MAF */
-	if (fields[0][0]=='a' && fields[0][1]=='\0'){
-	  free(line);
-	  freeFields(fields);
-	  return(MAF);
-	}
-
-	/* Unknown format if the first non-empty, non-command data in the
-	   file is non of the above */
-	free(line);
-	freeFields(fields);
-	return(0);
-  }
-
-  free(line);
-  nrerror("ERROR: Empty alignment file\n");
-   
-}
-
-
-
-PRIVATE char** splitFields(char* string){
-
-  char c;
-  char* currField;
-  char** output=NULL;
-  int* seps;
-  int nSep;
-  int nField=0;
-  int i=0;
-
-  if (strlen(string)==0 || string==NULL){
-	return NULL;
-  }
-
-  /* First find all characters which are whitespaces and store the
-	 positions in the array seps */
-    
-  seps=(int *)space(sizeof(int));
-  seps[0]=-1;
-  nSep=1;
+	n_A=n_T=n_G=n_C=0;
   
-  while ((c=string[i])!='\0' && (c!='\n')){
-	if (isspace(c)){
-	  seps=(int*)xrealloc(seps,sizeof(int)*(nSep+1));
-	  seps[nSep++]=i;
-	}
-	i++;
-  }
-
-  seps=(int*)xrealloc(seps,sizeof(int)*(nSep+1));
-  seps[nSep]=strlen(string);
-
-
-  /* Then go through all intervals in between of two whitespaces (or
-	 end or start of string) and store the fields in the array
-	 "output"; if there are two adjacent whitespaces this is ignored
-	 resulting in a behaviour like "split /\s+/" in perl */
-  
-  for (i=0;i<nSep;i++){
-
-	int start=seps[i];
-	int stop=seps[i+1];
-	int length=(stop-start);
-	int notSpace,j;
-
-	
-	currField=(char *)space(sizeof(char)*(length+1));
-	strncpy(currField,string+start+1,length-1);
-	currField[length]='\0';
-
-	/* check if field is not only whitespace */
-	notSpace=0;
-	j=0;
-	while (c=currField[j]!='\0'){
-	  if (!isspace(c)){
-		notSpace=1;
-		break;
+	for (j=0; j<strlen(seq); j++) {
+	  switch (seq[j]) {
+	  case 'A': n_A++; break;
+	  case 'C': n_C++; break;
+	  case 'G': n_G++; break;
+	  case 'T': n_T++; break;
+	  case 'U': n_T++; break;  
 	  }
 	}
+	
+	length=strlen(seq);
 
-	if (notSpace){
-	  output=(char**)xrealloc(output,sizeof(char**)*(nField+1));
-	  output[nField++]=currField;
-	  currField=NULL;
-	} else {
-	  free(currField);
-	  currField=NULL;
+
+	GC=((double)(n_G+n_C)/(double)(n_G+n_C+n_A+n_T));
+	A=((double)n_A/(n_A+n_T));
+	C=((double)n_C/(n_G+n_C));
+
+	if (length<50){
+	  sprintf(string," WARNING: Sequence %d too short.\n",i+1);
+	  string+=strlen(string);
 	}
 
-	//printf("%s|\n",output[nField-1]);
+	if (length>400){
+	  sprintf(string," WARNING: Sequence %d too long.\n",i+1);
+	  string+=strlen(string);
+	}
+	
+	if ((!IN_RANGE(0.25,GC,0.75)) ||
+		(!IN_RANGE(0.25,GC,0.75)) ||
+		(!IN_RANGE(0.25,GC,0.75))){
+	  sprintf(string," WARNING: Sequence %d: Base composition out of range.\n",i+1);
+	  string+=strlen(string);
+	}
   }
-
-  if (nField==0){
-	return NULL;
-  }
-
-  
-  output=(char**)xrealloc(output,sizeof(char**)*(nField+1));
-  output[nField]=NULL;
-  
-  free(seps);
-  return output;
-  
 }
 
-PRIVATE void freeFields(char** fields){
-
-  int i=0;
-  while (fields[i]!=NULL){
-	free(fields[i++]);
-  }
-  free(fields);
-}
 
 
 /********************************************************************
@@ -914,4 +573,10 @@ PRIVATE void version(void){
   printf("RNAz version " PACKAGE_VERSION ", September 2004\n");
   exit(EXIT_SUCCESS);
 }
+
+
+
+
+
+
 
