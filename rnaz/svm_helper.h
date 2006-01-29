@@ -7,7 +7,7 @@
  *                                                                   *
  *	          c Stefan Washietl, Ivo L Hofacker                  *
  *                                                                   *
- *	   $Id: svm_helper.h,v 1.4 2004-09-22 10:05:21 wash Exp $    *
+ *	   $Id: svm_helper.h,v 1.5 2006-01-29 18:22:37 wash Exp $    *
  *                                                                   *
  *********************************************************************/
 
@@ -29,3 +29,10 @@ void scale_regression_node(struct svm_node* node);
 void scale_decision_node(struct svm_node* node);
 
 void backscale_regression(double* avg, double* stdv);
+
+struct svm_model *svm_load_model_string(char *fp);
+
+int print_model(const char *model_file_name, struct svm_model *model);
+
+
+
