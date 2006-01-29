@@ -6,7 +6,7 @@
  *                                                                   *
  *	          c Stefan Washietl, Ivo L Hofacker                  *
  *                                                                   *
- *	   $Id: zscore.c,v 1.3 2004-09-19 13:31:41 wash Exp $        *
+ *	   $Id: zscore.c,v 1.4 2006-01-29 18:24:17 wash Exp $        *
  *                                                                   *
  *********************************************************************/
 
@@ -36,16 +36,12 @@ void regression_svm_init(char *basefilename){
   stdv_model=NULL;
 
   get_regression_models(&avg_model,&stdv_model,basefilename);
+
   if (avg_model==NULL)
-	nrerror("ERROR: Could not load mu-regression model. \n"
-			"You have to set the RNAZDIR enviroment variable "
-			"pointing to the model files!");
-
+	nrerror("ERROR: Could not load mu-regression model. \n");
+  
   if (stdv_model==NULL)
-	nrerror("ERROR: Could not load sigma-regression model.\n"
-			"You have to set the RNAZDIR enviroment variable "
-			"pointing to the model files!");
-
+	nrerror("ERROR: Could not load sigma-regression model.\n");
 }
 
 /* Destroys SVM-models */
