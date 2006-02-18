@@ -1,7 +1,8 @@
-AC_INIT(RNAz, 0.1.1, wash@tbi.univie.ac.at, RNAz)
+AC_INIT(RNAz, 1.0, wash@tbi.univie.ac.at, RNAz)
 AM_INIT_AUTOMAKE
 
 AC_PROG_CC
+
 
 if test "$GCC" = yes; then
   AC_DEFINE(UNUSED, __attribute__ ((unused)), avoid warning about unused variables)
@@ -30,6 +31,6 @@ AC_PROG_INSTALL
 
 AC_CONFIG_HEADERS(config.h) 
 
-AC_OUTPUT([Makefile librna/Makefile rnaz/Makefile models/Makefile examples/Makefile man/Makefile man/RNAz.1])
+AC_OUTPUT([Makefile librna/Makefile rnaz/Makefile  perl/Makefile models/Makefile examples/Makefile man/Makefile man/RNAz.1])
 
 

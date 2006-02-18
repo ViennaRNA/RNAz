@@ -1,4 +1,4 @@
-SUBDIRS=librna rnaz models examples man
+SUBDIRS=librna rnaz perl models examples man
 
 docu_DATA = INSTALL README AUTHORS COPYING TODO
  

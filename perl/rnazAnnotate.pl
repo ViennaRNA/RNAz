@@ -10,8 +10,8 @@ use Pod::Usage;
 my $BEDfile='';
 my $help='';
 
-GetOptions('file=s' => \$BEDfile,
-		   'f=s' => \$BEDfile,
+GetOptions('bed=s' => \$BEDfile,
+		   'b=s' => \$BEDfile,
 		   'help'=>\$help,
 		   'h'=>\$help
 		  );

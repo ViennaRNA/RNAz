@@ -7,7 +7,7 @@
  *                                                                   *
  *	          c Stefan Washietl, Ivo L Hofacker                      *
  *                                                                   *
- *	   $Id: RNAz.c,v 1.8 2006-01-29 18:21:08 wash Exp $              *
+ *	   $Id: RNAz.c,v 1.9 2006-02-18 15:19:06 wash Exp $              *
  *                                                                   *
  *********************************************************************/
 #include "config.h"
@@ -95,17 +95,17 @@ int main(int argc, char *argv[])
   
   if (cmdline_parser (argc, argv, &args) != 0){
 	usage();
-	exit(1);
+	exit(EXIT_FAILURE);
   }
 
   if (args.help_given){
 	help();
-	exit(0);
+	exit(EXIT_SUCCESS);
   }
 
   if (args.version_given){
 	version();
-	exit(0);
+	exit(EXIT_SUCCESS);
   }
 
   if (args.outfile_given){
@@ -550,27 +550,32 @@ PRIVATE void warning(char* string, double id,int n_seq, double z,double sci,
  *                                                                  *
  ********************************************************************/
 
-PRIVATE void usage(void)
-{
-  nrerror("RNAz [-v] [-h] [-r] [-f from] [-t to] file\n\n"
-		  "Run RNAz -h for details.\n");
+PRIVATE void usage(void){
+
+  help();
+
 }
 
 PRIVATE void help(void){
 
-  nrerror("RNAz [-v] [-h] [-r] [-f from] [-t to] file\n\n"
-		  "file    Input alignment in Clustal W format\n"
-		  "-f -t   Score subregion from-to of alignment\n"
-		  "-r      Scan reverse complement of input alignment\n"
-		  "-o      Write output to file (default STDOUT)\n"
-		  "-v      Show version information\n"
-		  "-h      Show this help message\n"
-		  );
+  cmdline_parser_print_version ();
+
+  printf("\nUsage: %s [OPTIONS]... [FILES]\n\n", CMDLINE_PARSER_PACKAGE);
+  printf("%s\n","  -h, --help              Print help and exit");
+  printf("%s\n","  -V, --version           Print version and exit");
+  printf("%s\n","  -f, --forward           Score forward strand");
+  printf("%s\n","  -r, --reverse           Score reverse strand");
+  printf("%s\n","  -b, --both-strands      Score both strands");
+  printf("%s\n","  -o, --outfile=FILENAME  Output filename");
+  printf("%s\n","  -w, --window=START-STOP Score window from START to STOP");
+  printf("%s\n","  -p, --cutoff=FLOAT      Probability cutoff");
+  printf("%s\n","  -g, --show-gaps         Display alignment with gap  (default=off)");
+  printf("%s\n\n","  -s, --predict-strand    Use strand predictor  (default=off)");
 
 }
 
 PRIVATE void version(void){
-  printf("RNAz version " PACKAGE_VERSION ", September 2004\n");
+  printf("RNAz version " PACKAGE_VERSION "\n");
   exit(EXIT_SUCCESS);
 }
 
