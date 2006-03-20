@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+# $Id: rnazSelectSeqs.pl,v 1.2 2006-03-20 16:26:53 wash Exp $
+
 use strict;
 use FindBin;
 use lib $FindBin::Bin;
@@ -15,6 +17,9 @@ my $maxID=99;
 my $optID=80;
 my $noReference=0;
 my $help=0;
+my $version=0;
+my $man=0;
+
 
 GetOptions('num-seqs:i' => \$maxSeqs,
 		   'n:i' => \$maxSeqs,
@@ -23,10 +28,25 @@ GetOptions('num-seqs:i' => \$maxSeqs,
 		   'a:i' => \$nSamples,
 		   'max-id:i' => \$maxID,
 		   'opt-id:i' => \$optID,
+		   'i:i' => \$optID,
 		   'no-reference' => \$noReference,
+		   'x' => \$noReference,
 		   'help'=>\$help,
-		   'h'=>\$help
-		  );
+		   'man'=>\$man,
+		   'h'=>\$help,
+		   'version'=>\$version,
+		   'v'=>\$version,
+		  ) or pod2usage(1);
+
+pod2usage(1) if $help;
+pod2usage(-verbose => 2) if $man;
+
+if ($version){
+  print "\nrnazSelectSeqs.pl is part of RNAz $RNAz::rnazVersion\n\n";
+  print "http://www.tbi.univie.ac.at/~wash/RNAz\n\n";
+  exit(0);
+}
+
 
 my $fileName=shift @ARGV;
 my $fh;
@@ -56,9 +76,82 @@ while (my $alnString=getNextAln($alnFormat,$fh)){
 					   numAln=>$nSamples);
 
   foreach $aln (@$samples){
-
 	print formatAln($aln,$alnFormat);
-	
   }
-
 }
+__END__
+
+=head1 NAME
+
+C<rnazSelectSeqs.pl> - Select subsets of sequences from an alignment
+
+=head1 SYNOPSIS
+
+ rnazSelectSeqs.pl [options] [file]
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-n, --num-seqs>
+
+Number of sequences in the output alignment(s) (default:6)
+
+=item B<-a, --num-samples>
+
+Number of output alignments (default: 1)
+
+=item B<-i, --opt-id>
+
+The resulting alignment(s) is (are) optimized for this value of mean
+pairwise identity (in percent, default: 80)
+
+=item B<--max-id>
+
+Sequenses from pairs with pairwise identity (in percent) higher than
+this are removed (default: 99, i.e. only almost identical sequences
+are removed)
+
+=item B<-x, --no-reference>
+
+By default the first sequence (=reference sequence) is always present
+in the output alignment(s). If you do not care having it removed set
+this flag.
+
+=item B<-h, --help>
+
+Print a brief help message and exits.
+
+=item B<--man>
+
+Prints the manual page and exits.
+
+=back
+
+=head1 DESCRIPTION
+
+C<rnazSelectSeqs.pl> reads a multiple sequence alignment in C<Clustal
+W> or C<MAF> format and returns an alignment in the same format with a
+user specified number of sequences. The subset is greedily optimized
+for a user specified mean pairwise identity. There are options to
+removes sequences which are too similar. It is also possible to sample
+more than one alignment. The program uses a simple heuristic to
+accomplish that.
+
+=head1 EXAMPLES
+
+ # rnazSelectSeqs.pl -n 4 -a 3 miRNA.maf
+
+Samples three subsets of four sequences from the alignment C<miRNA.maf>
+
+ # rnazSelectSeqs.pl -n 5 -i 70 miRNA.maf
+
+Selects a subset of five sequences optimized to a mean pairwise identity of 70%.
+
+=head1 AUTHORS
+
+Stefan Washietl <wash@tbi.univie.ac.at>
+
+Ivo Hofacker <ivo@tbi.univie.ac.at>
+
+=cut
