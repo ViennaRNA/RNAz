@@ -1,0 +1,83 @@
+=head1 NAME
+
+C<RNAz> - Detecting stable and conserved RNA secondary structures in
+multiple sequence alignments
+
+=head1 SYNOPSIS
+
+ RNAz [options] [file]
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-f>, B<--forward>
+
+=item B<-r>, B<--reverse>
+
+=item B<-b>, B<--both-strands>
+
+Scores the forward direction, the reverse complement or both. By default
+only the forward direction as given in the input alignment is scored.
+
+=item B<-o> NAME, B<--outfile>=NAME
+
+Stores the output in a file. By default the output is printed to the
+standard output.
+
+=item B<-w> START-STOP, B<--window>=START-STOP
+
+Scores a sub-region of the alignment starting with column START up to
+column STOP.
+
+=item B<-p> X, B<--cutoff>=X
+
+Only show results with RNA class probability P > X. (Default: 0.5)
+
+=item B<-g>, B<--show-gaps>
+
+Print the output including gaps. Useful if the alignment wants to be
+recovered from the RNAz output. (Default: off)
+
+=item B<-s> X, B<--predict-strand>=X
+
+Experimental feature which scores both strands and gives you a guess which
+direction is more likely to encode a structural RNA. (Default: off)
+
+=item B<-V>, B<--version>
+
+Prints version information and exits.
+
+=item B<-h>, B<--help>
+
+Prints a brief help message and exits.
+
+=back
+
+=head1 DESCRIPTION
+
+C<RNAz> detects stable and conserved RNA secondary structures in multiple
+sequence alignments. It calculates two independent scores for structural
+conservation (the structure conservation index SCI) and for thermodynamical
+stability (the z-score). High structural conservation (high SCI) and
+thermodynamical stability (negative z-scores) are typical features of
+functional RNAs (e.g. noncoding RNAs or cis-acting regulatory
+elements). RNAz uses both scores to classify a given alignment as
+functional RNA or not. It uses a support vector machine classification
+procedure which estimates a class-probability which can be used as
+convenient overall-score.
+
+C<RNAz> reads one or more alignments in CLUSTAL W or MAF format from a file
+or standard input and prints the results to the standard output. 
+
+Please refer to the file README and the tutorial for full documentation.
+
+=head1 AUTHORS
+
+Stefan Washietl <wash@tbi.univie.ac.at>
+
+Ivo Hofacker <ivo@tbi.univie.ac.at>
+
+Kristin Missal <missal@izbi.uni-leipzig.de>
+
+=cut
