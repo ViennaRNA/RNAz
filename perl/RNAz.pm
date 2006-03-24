@@ -9,6 +9,8 @@ our @ISA = qw(Exporter);
 
 our @EXPORT_OK = ();
 
+our $rnazVersion='1.0';
+
 our @EXPORT = qw(checkFormat
 				 getNextAln
 				 formatAln
@@ -25,9 +27,14 @@ our @EXPORT = qw(checkFormat
 				 parseRNAz
 				 shuffleAln
 				 getSeq
-				 blastSeq);
+				 blastSeq
+				 niceNumber);
 
-our $VERSION = '0.01';
+# Set version of current RNAz package
+
+
+our $VERSION = '0.1';
+
 
 sub checkFormat{
 
@@ -238,12 +245,12 @@ sub formatAln{
 	}
 
   } elsif ($format eq 'maf'){
-	print "a score=0\n";
+	$output.="a score=0\n";
 	foreach my $row (@aln){
 	  my $length=$row->{end}-$row->{start};
-	  print "s $row->{name} $row->{start} $length $row->{strand} $row->{fullLength} $row->{seq}\n";
+	  $output.="s $row->{name} $row->{start} $length $row->{strand} $row->{fullLength} $row->{seq}\n";
 	}
-	print "\n";
+	$output.="\n";
   }
   return $output;
 
@@ -938,7 +945,12 @@ sub parseRNAz{
 		  "meanMFE"=>$meanMFE,
 		  "consensusSeq"=>$consensusSeq,
 		  "consensusFold"=>$consensusFold,
-		  "aln"=>[@aln]};
+		  "refSeqName"=>$aln[0]->{name},
+		  "refSeqStart"=>$aln[0]->{start},
+		  "refSeqEnd"=>$aln[0]->{end},
+		  "refSeqStrand"=>$aln[0]->{strand},
+		  "aln"=>[@aln],
+		  "rawOutput"=>$rnaz};
 
 }
 
@@ -1019,19 +1031,23 @@ sub shuffleAln{
 	my $id;
 	
 	if ($pairs>0){
+	  if ($level==0){
+		$id=int(($matches/$pairs)+0.5);
+	  }
 	  if ($level==1){
 		$id=sprintf("%.1f",$matches/$pairs);
 	  }
 	  if ($level==2){
 		$id=sprintf("%.2f",$matches/$pairs);
 	  }
+
 	}
 	else {
 	  $id=sprintf("%.0f",1);
 	}
 
 	$mask.=$id;
-	
+
 	push @list, $mask;
 	if (!exists $hash{$mask}){
 	  $hash{$mask}=[$currCol];
@@ -1118,7 +1134,8 @@ sub getSeq{
 }
 ######################################################################
 #
-# blastSeq($dir string, $db string, $cutoff real, $seq string)
+# blastSeq($dir string, $db string, $cutoff real,
+#          $seq string, $blastExecutable string)
 #
 # Runs blast search for sequence $seq on the database $db with a
 # e-value cutoff of $cutoff. $dir: BLASTDIR
@@ -1130,13 +1147,13 @@ sub getSeq{
 
 sub blastSeq{
 
-  (my $dir, my $db, my $cutoff, my $seq)=@_;
+  (my $dir, my $db, my $cutoff, my $seq, my $blastExecutable)=@_;
 
   open(TMP,">/tmp/blast$$.fa");
 
   print TMP ">dummy\n$seq\n";
 
-  my @results=`blastall -p blastn -e $cutoff -d $db -m 8 -i /tmp/blast$$.fa`;
+  my @results=`$blastExecutable -p blastn -e $cutoff -d $db -m 8 -i /tmp/blast$$.fa`;
 
   #print @results;
 
@@ -1172,6 +1189,22 @@ sub blastSeq{
   return @output;
 }
 
+######################################################################
+#
+# niceNumber(pos int)
+#
+# Makes 26,456,345 out of 26456345
+#
+######################################################################
+
+sub niceNumber{
+  my $pos=shift;
+  my $rev=reverse $pos;
+  $rev=~s/(...)/$1,/g;
+  $pos=reverse $rev;
+  $pos=~s/^,//;
+  return $pos;
+}
 
 
 1;

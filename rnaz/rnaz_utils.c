@@ -1,3 +1,18 @@
+/*********************************************************************                
+ *                                                                   *
+ *                        rnaz_utils.c                               *
+ *                                                                   *
+ *                  Helper functions for RNAz                        *
+ *                                                                   *
+ *                                                                   *
+ *	                    Stefan Washietl                              *
+ *                                                                   *
+ *	   $Id: rnaz_utils.c,v 1.2 2006-03-24 15:43:21 wash Exp $              *
+ *                                                                   *
+ *********************************************************************/
+
+
+
 #include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -212,10 +227,6 @@ int read_maf(FILE *clust, struct aln *alignedSeqs[]) {
   }
   return num_seq;
 }
-
-
-
-
 
 
 /********************************************************************

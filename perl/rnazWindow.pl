@@ -23,7 +23,9 @@ my $maxID=100;
 my $forwardStrand=0;
 my $reverseStrand=0;
 my $bothStrands=0;
+my $version=0;
 my $help=0;
+my $man=0;
 
 GetOptions('window:i' => \$window,
 		   'w:i' => \$window,
@@ -42,8 +44,21 @@ GetOptions('window:i' => \$window,
 		   'reverse'=>\$reverseStrand,
 		   'no-reference' => \$noReference,
 		   'help'=>\$help,
-		   'h'=>\$help
-		  );
+		   'man'=>\$man,
+		   'h'=>\$help,
+		   'version'=>\$version,
+		   'v'=>\$version
+		  ) or pod2usage(2);
+
+
+pod2usage(1) if $help;
+pod2usage(-verbose => 2) if $man;
+
+if ($version){
+  print "\nrnazWindow.pl is part of RNAz $RNAz::rnazVersion\n\n";
+  print "http://www.tbi.univie.ac.at/~wash/RNAz\n\n";
+  exit(0);
+}
 
 # If no strand is specified, default is forward
 $forwardStrand=1 if (!$forwardStrand and
@@ -212,6 +227,150 @@ while (my $alnString=getNextAln($alnFormat,$fh)){
 	last if ($sliceEnd==$length);
   }
 }
+
+__END__
+
+=head1 NAME
+
+C<rnazWindow.pl> - Slice alignments in overlapping windows and
+process/filter alignment windows in various ways.
+
+=head1 SYNOPSIS
+
+ rnazWindow.pl [options] [file]
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-w, --window>
+
+Size of the window (Default: B<120>)
+
+=item B<-s, --slide>
+
+Step size (Default: B<40>)
+
+=item B<--max-gap>=X
+
+Maximum fraction of gaps. If a reference sequence is used
+(i.e. C<--no-reference> is not set), each sequence is compared to the
+reference sequence and if in the pairwise comparison the fraction of
+columns with gaps is higher than X the sequence is discarded. If no
+reference sequence is used, all sequences with a fraction of gaps
+higher than X are discarded. (Default: B<0.25>)
+
+=item B<--max-masked>=X
+
+Maximum fraction of masked (=lowercase letters) in a sequence. All
+sequences with a fraction of more than X lowercase letters are
+discarded. This is usually used for excluding repeat sequences marked
+by C<RepeatMasker> but any other information can be encoded by using
+lowercase letters. (Default: B<0.1>)
+
+=item B<--min-id>=X
+
+Discard alignment windows with an overall mean pairwise identity
+smaller than X%. (Default: B<50>)
+
+=item B<--min-seqs>=N
+
+Minimum number of sequences in an alignment. Discard any windows with
+less than N sequences (Default:B<2>).
+
+=item B<--max-seqs>=N
+
+Maximum number of sequences in an alignment. If the number of
+sequences in a window is higher than N, a subset of sequences is used
+with exactly N sequences. The greedy algorithm of the program
+C<rnazSelectSeqs.pl> is used which optimizes for a user specified mean
+pairwise identity (see C<--opt-id>). (Default: B<6>)
+
+=item B<--min-length>=N
+
+Minimum number of columns of an alignment slice. After removing
+sequences from the alignment, ``all-gap" columns are removed. If the
+resulting alignment has fewer than N columns, the complete alignment
+is discarded.
+
+=item B<--opt-id>=X
+
+If the number of sequences has to be reduced (see C<--max-seqs>) a
+subset of sequences is chosen which is optimized for this value of
+mean pairwise identity. (In percent, default: B<80>)
+
+=item B<--max-id>=X
+
+One sequence from pairs with pairwise identity higher than X % this is
+removed (default: B<99>, i.e. only almost identical sequences are
+removed) B<NOT IMPLEMENTED>
+
+=item B<--forward>
+
+=item B<--reverse>
+
+=item B<--both-strands>
+
+Output forward, reverse complement or both of the sequences in the
+windows. Please note: C<RNAz> has the same options, so if you use
+C<rnazWindow.pl> for an RNAz screen, we recommend to set the option
+directly in C<RNAz> and leave the default here. (Default:
+-B<--forward>)
+
+=item B<--no-reference>
+
+By default the first sequence is interpreted as reference
+sequence. This means, for example, that if the reference sequence is
+removed during filtering steps the complete alignment is
+discarded. Also, if there are too many sequences in the alignment, the
+reference sequence is never removed when choosing an appropriate
+subset. Having a reference sequence is crucial if you are doing
+screens of genomic regions. For some other applications it might not
+be necessary and in such cases you can change the default behaviour by
+setting this option.
+
+
+=item B<-v, --version>
+
+Prints version information and exits.
+
+=item B<-h, --help>
+
+Prints a short help message and exits.
+
+=item B<--man>
+
+Prints a detailed manual page and exits.
+
+=back
+
+=head1 DESCRIPTION
+
+In many cases it is necessary to slice, pre-process and filter
+alignments to get the optimal input for RNAz. This can be a tedious
+task if you have a large number of alignments to analyze. This program
+performs the most common pre-processing and filtering steps.
+
+Basically it slices the input alignments (C<CLUSTAL W> or C<MAF>
+format) in overlapping windows. The resulting alignments windows are
+further processed and only ``reasonable" alignment windows are finally
+printed out, i.e. not too much gaps/repeats, not too few or too many
+sequences...
+
+=head1 EXAMPLES
+
+ # rnazWindow.pl --min-seqs=4 some.aln
+
+Slices the alignment -C<some.aln> in overlapping windows of size 120,
+slide 40 and filters the windows for an optimal input to RNAz
+(=default behaviour). Only alignments with at least four sequences
+are printed.
+
+=head1 AUTHORS
+
+Stefan Washietl <wash@tbi.univie.ac.at>
+
+=cut
 
 
 

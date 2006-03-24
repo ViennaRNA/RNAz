@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: rnazSelectSeqs.pl,v 1.2 2006-03-20 16:26:53 wash Exp $
+# $Id: rnazSelectSeqs.pl,v 1.3 2006-03-24 15:43:14 wash Exp $
 
 use strict;
 use FindBin;
@@ -8,7 +8,6 @@ use lib $FindBin::Bin;
 use RNAz;
 use Getopt::Long;
 use Pod::Usage;
-
 
 my $maxSeqs=6;
 my $minSeqs=2;
@@ -83,7 +82,7 @@ __END__
 
 =head1 NAME
 
-C<rnazSelectSeqs.pl> - Select subsets of sequences from an alignment
+C<rnazSelectSeqs.pl> - Select subsets of sequences from an alignment.
 
 =head1 SYNOPSIS
 
@@ -93,38 +92,41 @@ C<rnazSelectSeqs.pl> - Select subsets of sequences from an alignment
 
 =over 8
 
-=item B<-n, --num-seqs>
+=item B<-n> N, B<--num-seqs>=N
 
-Number of sequences in the output alignment(s) (default:6)
+Number of sequences in the output alignment(s). (Default:B<6>)
 
-=item B<-a, --num-samples>
+=item B<-a> N, B<--num-samples>=N
 
-Number of output alignments (default: 1)
+Number of output alignments (Default: B<1>)
 
-=item B<-i, --opt-id>
+=item B<-i> X, B<--opt-id>=X
 
 The resulting alignment(s) is (are) optimized for this value of mean
-pairwise identity (in percent, default: 80)
+pairwise identity (in percent, default: B<80>)
 
-=item B<--max-id>
+=item B<--max-id>=X
 
-Sequenses from pairs with pairwise identity (in percent) higher than
-this are removed (default: 99, i.e. only almost identical sequences
-are removed)
+Sequences from pairs with pairwise identity higher than X% are removed
+(default: B<99>, i.e. only almost identical sequences are removed)
 
 =item B<-x, --no-reference>
 
 By default the first sequence (=reference sequence) is always present
-in the output alignment(s). If you do not care having it removed set
+in the output alignment(s). If you do not care having it removed, set
 this flag.
+
+=item B<-v, --version>
+
+Prints version information and exits.
 
 =item B<-h, --help>
 
-Print a brief help message and exits.
+Prints a short help message and exits.
 
 =item B<--man>
 
-Prints the manual page and exits.
+Prints a detailed manual page and exits.
 
 =back
 
@@ -142,7 +144,7 @@ accomplish that.
 
  # rnazSelectSeqs.pl -n 4 -a 3 miRNA.maf
 
-Samples three subsets of four sequences from the alignment C<miRNA.maf>
+Samples three subsets of four sequences from the alignment C<miRNA.maf>.
 
  # rnazSelectSeqs.pl -n 5 -i 70 miRNA.maf
 
