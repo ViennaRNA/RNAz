@@ -1,7 +1,7 @@
 =head1 NAME
 
 C<RNAz> - Detecting stable and conserved RNA secondary structures in
-multiple sequence alignments
+multiple sequence alignments.
 
 =head1 SYNOPSIS
 
@@ -70,7 +70,7 @@ convenient overall-score.
 C<RNAz> reads one or more alignments in CLUSTAL W or MAF format from a file
 or standard input and prints the results to the standard output. 
 
-Please refer to the file README and the tutorial for full documentation.
+Please refer to the files README and manual.pdf for full documentation.
 
 =head1 AUTHORS
 
