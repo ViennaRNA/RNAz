@@ -1,7 +1,8 @@
-% Time-stamp: <06/03/24 14:44:39 wash>
+% Time-stamp: <06/03/24 18:52:45 wash>
 
 \documentclass[11pt]{article}
 \usepackage{graphicx}
+\usepackage{hyperref}
 \usepackage{verbatim}
 \usepackage{rotating}
 \usepackage{tabularx}
@@ -80,6 +81,15 @@ http://www.tbi.univie.ac.at/\raisebox{-0.9ex}{\~{ }}wash/RNAz
 
 %\end{center}
 \normalfont
+
+\newpage
+\thispagestyle{empty}
+\vspace*{0.9\textheight}
+
+\begin{center}
+  \$Id: manual.tex,v 1.2 2006-03-24 17:56:08 wash Exp $\ $\$
+\end{center}
+
 
 \newpage
 
@@ -236,8 +246,8 @@ the \texttt{--help} option, e.g.:
 \end{verbatim}
 
 For the Perl programs you get more detailed manual pages by using the
-\texttt{--man} option. All manual pages are reproduced in appendix A in
-this manual.
+\texttt{--man} option. All manual pages are reproduced in Appendix
+\ref{sec:manual-pages} in this manual.
 
 Most command line options have a long (e.g. \texttt{--help}) and a short
 (e.g. \texttt{-h}) form. For didactic reasons, we use long option names
@@ -398,9 +408,9 @@ performs well on structural RNAs \cite{gardner05}. For hints on preparing
 the alignments see note~\ref{sec:creat-input-alignm}.
 
 RNAz can read two different alignment formats: Clustal W
-(Fig.~1A) and MAF (Fig.~1B). The Clustal W format is a
-concise format which is supported by many programs and thus suitable for
-every-day use. 
+(Fig.~\ref{fig:formats}A) and MAF (Fig.~\ref{fig:formats}B). The Clustal W
+format is a concise format which is supported by many programs and thus
+suitable for every-day use.
 
 For genomic screens, however, it is necessary to exactly store the genomic
 locations of aligned sequences. For this purpose, the MAF format was
@@ -425,6 +435,7 @@ developed which requires six fields for each sequence entry:
 \caption{Supported alignment formats and RNAz output. (A) Clustal W format,
   (B) MAF format (sequences have been shortened due to space restrictions),
   (C) Output of RNAz on the MAF file shown in (B).}
+\label{fig:formats}
 \end{figure}
 
 
@@ -449,8 +460,8 @@ RNAz. In the simplest case you type:
 # RNAz tRNA.maf
 \end{verbatim}
 
-The file \texttt{tRNA.maf} is that one shown in Fig.~1B and the command
-gives you the output shown in Fig.~1C.
+The file \texttt{tRNA.maf} is that one shown in Fig.~\ref{fig:formats}B and
+the command gives you the output shown in Fig.~\ref{fig:formats}C.
 
 \subsubsection{Understanding the output}
 \label{sec:understanding-output}
@@ -608,11 +619,11 @@ has numerous additional functions and will be used again in section
 \subsubsection{Overview}
 
 An analysis pipeline suitable for scanning a large number of genomic
-alignments is outlined in Fig.~2. In the following, we demonstrate the
-usage of this pipieline on the example of a genomic screen of
-\emph{Saccharomyces cerevisiae}. We want to describe the method as general
-as possible and we will focus here mainly on technical details. A paper
-describing the results of a comprehensive RNAz screen in yeast is in
+alignments is outlined in Fig.~\ref{fig:pipeline}. In the following, we
+demonstrate the usage of this pipeline on the example of a genomic screen
+of \emph{Saccharomyces cerevisiae}. We want to describe the method as
+general as possible and we will focus here mainly on technical details. A
+paper describing the results of a comprehensive RNAz screen in yeast is in
 preparation \cite{steigele06}.
 
 \begin{figure}
@@ -633,6 +644,7 @@ preparation \cite{steigele06}.
     tab-delimited data files can be exported to standard formats as GFF and
     BED. It is also possible to create a HTML formatted index file for the
     optional HTML output created in step 3.}
+\label{fig:pipeline}
 \end{figure}
 
 
@@ -930,11 +942,13 @@ We repeated the complete analysis with the randomized alignments and we get
     \bottomrule
   \end{tabular}
 \end{center}
+\label{tab:statistics}
 \end{table}
 
 
-Table~1 summarizes all results of this example screen. There are a few
-programs which help you to gather statistics on your data. For example,
+Table~\ref{tab:statistics} summarizes all results of this example screen.
+There are a few programs which help you to gather statistics on your data.
+For example,
 
 \begin{verbatim}
 # rnazIndex.pl --bed results.dat \
@@ -1198,6 +1212,7 @@ care.
 \appendix
 
 \section{Manual pages}
+\label{sec:manual-pages}
 
 \input{man.tex}
 
