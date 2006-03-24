@@ -1,3 +1,143 @@
+2006-03-23 17:09  wash
+
+	* man/RNAz.pod: Use POD template for the man page
+
+2006-03-23 17:06  wash
+
+	* man/RNAz.1.in: Removed the file in favor for a POD template which
+	  generates the manual page via pod2man
+
+2006-03-20 17:26  wash
+
+	* perl/rnazSelectSeqs.pl: [no log message]
+
+2006-02-18 16:19  wash
+
+	* rnaz/RNAz.c: [no log message]
+
+2006-02-18 16:14  wash
+
+	* perl/Makefile.am, perl/rnazAnnotate.pl, Makefile.am,
+	  configure.ac, examples/Makefile.am: [no log message]
+
+2006-01-29 23:42  wash
+
+	* perl/: rnazAnnotate.pl, rnazBEDsort.pl, rnazBEDstats.pl,
+	  rnazBlast.pl, RNAz.pm, rnazCluster.pl, rnazFilter.pl,
+	  rnazIndex.pl, rnazMAF2BED.pl, rnazRandomizeAln.pl,
+	  rnazSelectSeqs.pl, rnazSort.pl, rnazWindow.pl, Makefile.am:
+	  Adding perl scripts to the package
+
+2006-01-29 19:39  wash
+
+	* examples/: tRNA.maf, unknown.aln, miRNA.maf, tRNA.aln: New
+	  examples
+
+2006-01-29 19:38  wash
+
+	* examples/miRNA.aln: Replaced by new miRNA.maf example
+
+2006-01-29 19:30  wash
+
+	* models/Makefile.am: Added include file versions of the models
+	  which are compiled into the executable and strand model
+
+2006-01-29 19:30  wash
+
+	* models/strand.model: Added Kristin Missals strand model
+
+2006-01-29 19:29  wash
+
+	* models/: decision.inc, mfe_avg.inc, mfe_stdv.inc, strand.inc:
+	  Added include file versions of the models  which are compiled
+	  into the executable
+
+2006-01-29 19:25  wash
+
+	* rnaz/Makefile.am: added new source files
+
+2006-01-29 19:24  wash
+
+	* rnaz/zscore.c: Minor modifications because models are now
+	  compiled into the executable
+
+2006-01-29 19:22  wash
+
+	* rnaz/: svm_helper.c, svm_helper.h: Added function for reading
+	  model from string which can be included and compiled into the
+	  executable
+
+2006-01-29 19:21  wash
+
+	* rnaz/RNAz.c: Major revisions for version 1.0, moved utilities to
+	  rnaz_utils.c, included strand predictor, compile models into
+	  executable
+
+2006-01-29 19:17  wash
+
+	* rnaz/: strand.c, strand.h: Added Kristin Missals strand predictor
+
+2006-01-29 19:15  wash
+
+	* rnaz/: cmdline.ggo, cmdline.h, cmdline.c, getopt.h, getopt.c:
+	  Using getopt now and generating getopt.c and getopt.h with
+	  gengetopt
+
+2006-01-29 19:14  wash
+
+	* rnaz/rnaz_utils.h: First revision.
+
+2006-01-29 19:13  wash
+
+	* rnaz/rnaz_utils.c: First time checked in.
+
+2006-01-09 19:32  wash
+
+	* rnaz/RNAz.c: Changed alignment data structure; can read MAF now;
+	  fixed U/T and upper/lowcase bug: Results are now consistent for
+	  allvariations.
+
+2006-01-07 15:29  wash
+
+	* Makefile.am, rnaz/Makefile.am: Use libsvm version 2.8
+
+2006-01-07 15:25  wash
+
+	* rnaz/RNAz.c: Memory bug fixed in function 'classify'. No weird
+	  'strand' output any more.
+
+2005-04-28 11:11  wash
+
+	* man/: RNAz.1, RNAz.1.in: Added RNAz.1.in as template for
+	  automatic version substitution by ./configure
+
+2005-04-28 11:07  wash
+
+	* configure.ac: Added man/RNAz.1 to be processed by ./configure
+
+2004-10-21 10:02  wash
+
+	* rnaz/RNAz.c: Fixed bug. Identity was not correctly computed for
+	  lowercase (masked) seqeunces. Now identity is computet after all
+	  sequences are converted to uppercase.
+
+2004-10-20 18:58  wash
+
+	* rnaz/RNAz.c: RNAz can now read more than one alignment. It reads
+	  Clustal files delimited by // until EOF and flushes the output to
+	  STDOUT if a complete alignment is read.
+
+2004-09-22 12:05  wash
+
+	* Makefile.am, configure.ac, init-autotools.sh, rnaz/Makefile.am,
+	  rnaz/svm_helper.h: distribute the complete and unmodified
+	  libsvm-2.6 with the package
+
+2004-09-19 15:31  wash
+
+	* ChangeLog, INSTALL, NEWS, rnaz/RNAz.c, rnaz/svm_helper.c,
+	  rnaz/svm_helper.h, rnaz/zscore.c, rnaz/zscore.h: [no log message]
+
 2004-09-19 14:35  wash
 
 	* COPYING, INSTALL, NEWS, README, TODO, configure.ac, rnaz/RNAz.c,
@@ -12,14 +152,29 @@
 	  librna/energy_par.h, librna/fold.h, librna/fold_vars.c,
 	  librna/fold_vars.h, librna/intloops.h, librna/pair_mat.h,
 	  librna/params.c, librna/params.h, librna/read_epars.c,
-	  librna/utils.c, librna/utils.h, libsvm/Makefile.am,
-	  libsvm/svm.cpp, libsvm/svm.h, models/Makefile.am,
+	  librna/utils.c, librna/utils.h, models/Makefile.am,
 	  models/decision.model, models/mfe_avg.model,
 	  models/mfe_stdv.model, rnaz/Makefile.am, rnaz/RNAz.c,
 	  rnaz/svm_helper.c, rnaz/svm_helper.h, rnaz/zscore.c,
 	  rnaz/zscore.h, examples/IRE.aln, examples/Makefile.am,
 	  examples/miRNA.aln, examples/snoRNA.aln, examples/tRNA.aln,
 	  librna/energy_par.c, librna/fold.c, man/Makefile.am, man/RNAz.1:
-	  Initial revision 
+	  Importing sources first time
 
+2004-09-18 15:25  wash
+
+	* AUTHORS, COPYING, ChangeLog, INSTALL, Makefile.am, NEWS, README,
+	  TODO, configure.ac, init-autotools.sh, librna/Makefile.am,
+	  librna/alifold.c, librna/alifold.h, librna/energy_const.h,
+	  librna/energy_par.h, librna/fold.h, librna/fold_vars.c,
+	  librna/fold_vars.h, librna/intloops.h, librna/pair_mat.h,
+	  librna/params.c, librna/params.h, librna/read_epars.c,
+	  librna/utils.c, librna/utils.h, models/Makefile.am,
+	  models/decision.model, models/mfe_avg.model,
+	  models/mfe_stdv.model, rnaz/Makefile.am, rnaz/RNAz.c,
+	  rnaz/svm_helper.c, rnaz/svm_helper.h, rnaz/zscore.c,
+	  rnaz/zscore.h, examples/IRE.aln, examples/Makefile.am,
+	  examples/miRNA.aln, examples/snoRNA.aln, examples/tRNA.aln,
+	  librna/energy_par.c, librna/fold.c, man/Makefile.am, man/RNAz.1:
+	  Initial revision
 

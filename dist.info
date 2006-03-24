@@ -1,0 +1,18 @@
+1. Checkout the package
+
+2. Copy the libsvm-2.8.tar.gz into the package and untar it. If a new
+   libsvm verion should be used, change the paths in the rnaz/Makefile.am
+
+3. Adjust the version numbers in configure.ac, perl/RNAz.pm
+
+4. Generate manual: change in doc, run makedoc.pl, TeX the manual.tex to a
+   pdf and copy manual.pdf into the root directory of the package
+
+5. Update README, NEWS, TODO
+
+5. make dist
+
+--
+$Id: dist.info,v 1.1 2006-03-24 15:41:50 wash Exp $
+
+

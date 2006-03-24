@@ -38,6 +38,10 @@ functional RNA or not. It uses a support vector machine classification
 procedure which estimates a RNA-class probability which can be used as
 convenient overall-score.
 
+For a detailed coverage of all aspects of RNAz we recommend to read the
+manual/tutorial (manual.pdf).
+
+
 2. Theory
 =========
 
@@ -126,41 +130,31 @@ tests, P=0.5 and P=0.9 had specificities of 96% and 99%.
 See INSTALL for details.
 
 
-3.2. Enviroment variable
-========================
-
-To run RNAz you have to set the RNAZDIR enviroment variable pointing to
-the RNAz model files (*.model). The command depends on your shell and
-the location where you installed RNAz. For a default installation type:
-
-export RNAZDIR=/usr/local/share/RNAz/models                (BASH shell)
- or
-setenv RNAZDIR /usr/local/share/RNAz/models                (C/TC-shell)
-
-
 3.3. Invocation
 ===============
 
-RNAz [option] filename
+RNAz [options] [filename]
 
-RNAz takes an alignment file in the ClustalW format. The only currently
-available options are:
+RNAz takes an alignment file in the ClustalW or MAF format. Available
+command line options:
 
- -r     Scans reverse complement of the input alignment.
- 
- -f from -t to
-
-        Scans only subregion of the input alignment.
- 
- -h     Output help information.
- 
- -v     Output version information.
+  -h, --help              Print help and exit
+  -V, --version           Print version and exit
+  -f, --forward           Score forward strand
+  -r, --reverse           Score reverse strand
+  -b, --both-strands      Score both strands
+  -o, --outfile=FILENAME  Output filename
+  -w, --window=START-STOP Score window from START to STOP
+  -p, --cutoff=FLOAT      Probability cutoff
+  -g, --show-gaps         Display alignment with gap  (default=off)
+  -s, --predict-strand    Use strand predictor  (default=off)
 
 
 You can test RNAz on one of the example alignments (installed 
 by default in /usr/local/share/RNAz/examples)
 
 cd /usr/local/share/RNAz/examples
+
 RNAz tRNA.aln
 
 
@@ -174,7 +168,6 @@ Header:
 ############################  RNAz 0.1 ###############################
  
  Sequences: 4 <- Number of sequences in the alignment
- Slice: 1-74 <- region that is scored, by default complete alignment
  Columns: 74  <- Columns of the alignments
  Strand: reverse <- Strand considered for calculation 
                     ("forward" or "reverse")
@@ -183,13 +176,15 @@ Header:
  Consensus MFE: -30.98 <- consensus MFE calculated by RNAalifold
  Energy contribution: -27.72 <- RNAalifold energy part
  Covariance contribution:  -3.25 <- RNAalifold covariance part
+ Combinations/Pair:   1.64 <- Number of different base pair combination
+                              per predicted consensus base-pair
  Mean z-score:  -2.68 
  Structure conservation index:   0.94
  SVM decision value:   3.87  <- Internal decision value, probably 
                                 not of much interest...
  SVM RNA-class probability: 0.999672 <- Probability estimate for the
                                         decision value, "RNAz P-value"
- Prediction: RNA <- "RNA" if P>=0.5 else "no RNA"
+ Prediction: RNA <- "RNA" if P>=0.5 else "OTHER"
  
 ######################################################################
 
@@ -208,16 +203,16 @@ base, while '(' and ')' denote base pairs.
 The last structure is the RNAalifold consensus structure with the consensus
 MFE (broken down in energy and covariance contribution)
 
->AF041468.1-40566_40494
+>AF041468.1
 GGGGGUAUAGCUCAGUUGGUAGAGCGCUGCCUUUGCACGGCAGAUGUCAGGGGUUCGAGUCCCCUUACCUCCA
 (((((((..((((........)))).(((((.......))))).....(((((.......)))))))))))). ( -31.60)
->X54300.1-105_177
+>X54300
 GGGGGUAUAGCUUAGUUGGUAGAGCGCUGCUUUUGCAAGGCAGAUGUCAGCGGUUCGAAUCCGCUUACCUCCA
 (((((((..((((.((.(((((....)))))...)).)))).......(((((.......)))))))))))). ( -27.90)
->L00194.1-685_756
+>L00194
 GGGGCCAUAGCUCAGUUGGUAGAGCGCCUGCUUUGCAAGCAGGUGUCGUCGGUUCGAAUCCGUCUGGCUCCA
 (((((((..((((........))))(((((((.....)))))))...(.(((.......))).)))))))). ( -32.50)
->AY017179.1-1528_1601
+>AY017179
 GGGCCGGUAGCUCAGCCUGGGAGAGCGUCGGCUUUGCAAGCCGAAGGCCCCGGGUUCGAAUCCCGGCCGGUCCA
 ((((((((...((((((((((...((.((((((.....))))))..)))))))))).))......)))))))). ( -40.40)
 >consensus
@@ -230,39 +225,9 @@ GGGGCUAUAGCUCAGU_UGGUAGAGCGCCGCCUUUGCAAGGCAGAUGUCAGCGGUUCGAAUCCCCUUACCUCCA
 
 If you use RNAz in your work please cite:
 
-Stefan Washietl, Ivo L. Hofacker & Peter F. Stadler
-Fast and reliable detection of conserved and stable secondary structures
-in genomic sequences. (2004) Submitted. 
-
-
-5. Important notes
-==================
-
-The current version 0.1.1 is the first publicly available version of RNAz
-and is still in process of heavy development. Many more functions are
-planned making the use of RNAz easier. The user interface and the output
-might be subject of change in future releases.
-
-However, even in early stages, RNAz is ready for your research if you bear
-in mind the following notes:
-
-- The calculation of z-scores is limited to sequences of length 400. If
-  your alignment contains longer sequences the z-scores and subsequently the
-  P-value might be inaccurate. So please use the slice options for longer
-  alignments.
-
-- The classification model is currently only trained for up to 6
-  sequences. If your alignment has more sequences the support vector machine
-  might get confused and we cannot guarantee a meaningful P-value. In such
-  cases you have to interpret the z-scores and SCI on your own.
-
-- RNAz still lacks a meaningful treatment of missing data. So if your
-  alignment contains for example a sequence full of Ns or gaps this might
-  lead to misclassifications. In most cases it will not lead to false
-  positives because RNAalifold will not predict a consensus structures for
-  such alignments. But in some special cases it can indeed lead to
-  artifactual high P-values. For the time being, you should make sure that
-  all sequences in the alignment are roughly of the same size.
+Washietl S, Hofacker IL, Stadler PF
+Fast and reliable prediction of noncoding RNAs.
+Proc Natl Acad Sci U S A. 102(7):2454-9 (2005)
 
 
 6. Contact
@@ -275,5 +240,5 @@ discoverd something biologically interesting using RNAz.
 Stefan Washietl <wash@tbi.univie.ac.at>
 
 --
-$Id: README,v 1.2 2004-09-19 12:35:53 wash Exp $
+$Id: README,v 1.3 2006-03-24 15:41:50 wash Exp $
 

@@ -31,6 +31,6 @@ AC_PROG_INSTALL
 
 AC_CONFIG_HEADERS(config.h) 
 
-AC_OUTPUT([Makefile librna/Makefile rnaz/Makefile  perl/Makefile models/Makefile examples/Makefile man/Makefile man/RNAz.1])
+AC_OUTPUT([Makefile librna/Makefile rnaz/Makefile  perl/Makefile models/Makefile examples/Makefile man/Makefile])
 
 
