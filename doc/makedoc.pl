@@ -44,3 +44,26 @@ foreach my $pod (@pods){
 
 
 }
+
+
+# add link to stylesheet in each html file
+
+my $css='<link rel="stylesheet" href="../style.css" type="text/css"> ';
+
+foreach my $file (glob("html/*.html")){
+
+  print "$file\n";
+
+  open(IN,"<$file");
+
+  my @lines=<IN>;
+
+  close(IN);
+
+  open(OUT,">$file");
+
+  foreach my $line (@lines){
+	$line=~s/(<\/head>)/$css \n$1/;
+	print OUT $line;
+  }
+}
