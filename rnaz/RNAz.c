@@ -7,9 +7,10 @@
  *                                                                   *
  *	          c Stefan Washietl, Ivo L Hofacker                      *
  *                                                                   *
- *	   $Id: RNAz.c,v 1.9 2006-02-18 15:19:06 wash Exp $              *
+ *	   $Id: RNAz.c,v 1.10 2006-03-26 11:57:43 wash Exp $              *
  *                                                                   *
  *********************************************************************/
+
 #include "config.h"
 #include <stdio.h>
 #include <stdlib.h>

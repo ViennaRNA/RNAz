@@ -9,7 +9,7 @@ our @ISA = qw(Exporter);
 
 our @EXPORT_OK = ();
 
-our $rnazVersion='1.0';
+our $rnazVersion='1.0pre';
 
 our @EXPORT = qw(checkFormat
 				 getNextAln
