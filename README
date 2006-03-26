@@ -1,5 +1,5 @@
-RNAz  0.1.1
-===========
+RNAz  1.0pre
+============
 
 Content
 =======
@@ -165,11 +165,11 @@ Please refer to the following commented sample output:
 
 Header:
 
-############################  RNAz 0.1 ###############################
+############################  RNAz 1.0 ###############################
  
  Sequences: 4 <- Number of sequences in the alignment
  Columns: 74  <- Columns of the alignments
- Strand: reverse <- Strand considered for calculation 
+ Reading direction: reverse <- Strand considered for calculation 
                     ("forward" or "reverse")
  Mean pairwise identity:  74.38 <- in percent
  Mean single sequence MFE: -33.10 <- average RNAfold MFE in kcal/Mol
@@ -240,5 +240,5 @@ discoverd something biologically interesting using RNAz.
 Stefan Washietl <wash@tbi.univie.ac.at>
 
 --
-$Id: README,v 1.3 2006-03-24 15:41:50 wash Exp $
+$Id: README,v 1.4 2006-03-26 12:52:17 wash Exp $
 

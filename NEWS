@@ -1,12 +1,12 @@
 Version 1.0pre
 ==============
 
-- RNAz reads MAF alignments in addition to CLUSTAL W format
+- RNAz reads MAF alignments in addition to CLUSTAL W format.
 
-- RNAz reads and processes alignments from the input until a "end of file"
+- RNAz reads and processes alignments from the input until an "end of file"
   signal is reached. In other words, you can feed as many alignments to RNAz
-  as you want. This speeds up analysis since initialization has only be
-  done once.
+  as you want. This speeds up analysis since initialization has only be done
+  once.
 
 - A set of Perl programs is provided which automatize the
   pre-processing of alignments and thus make large scale screens
@@ -18,14 +18,14 @@ Version 1.0pre
 - No environment variable is needed any longer making installation
   easier.
 
-- A Windows installer is available. 
+- A Windows installer is available.
 
 - As an experimental feature, an additional SVM was added to guess the
-  correct orientation of a structure in the alignment (thanks to Kristin
-  Missal).
+  correct strand of a hit (thanks to Kristin Missal).
 
-- Bugs have been fixed, most notably the problem with mangled output which
-  occured on some systems.  
+- Bugs have been fixed, most notably the strange problem with mangled
+  output that occured on some systems. Also the uppercase/lowercase problem
+  has been fixed.
 
 - The output has been modified. The classification is now named "RNA" and
   "OTHER" (instead of "no RNA"). The "Combinations/Pair" value was added.
@@ -40,5 +40,5 @@ First publicly available version, so everything is new...
 
 
 --
-$Id: NEWS,v 1.4 2006-03-24 15:41:50 wash Exp $
+$Id: NEWS,v 1.5 2006-03-26 12:52:17 wash Exp $
 
