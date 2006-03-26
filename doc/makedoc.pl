@@ -20,6 +20,11 @@ my @pods=("../man/RNAz.pod",
 		  "../perl/rnazMAF2BED.pl",
 		  "../perl/rnazRandomizeAln.pl");
 
+
+if (!-e 'html'){
+  mkdir "html";
+}
+
 open(OUT,">$outFile");
 
 foreach my $pod (@pods){
@@ -51,8 +56,6 @@ foreach my $pod (@pods){
 my $css='<link rel="stylesheet" href="../style.css" type="text/css"> ';
 
 foreach my $file (glob("html/*.html")){
-
-  print "$file\n";
 
   open(IN,"<$file");
 
