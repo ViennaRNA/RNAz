@@ -7,7 +7,7 @@
  *                                                                   *
  *	          c Stefan Washietl, Ivo L Hofacker                  *
  *                                                                   *
- *	   $Id: svm_helper.c,v 1.4 2006-01-29 18:22:34 wash Exp $    *
+ *	   $Id: svm_helper.c,v 1.5 2006-07-31 13:34:08 wash Exp $    *
  *                                                                   *
  *********************************************************************/
 
@@ -20,6 +20,7 @@
 #include "svm.h"
 #include "svm_helper.h"
 #include "rnaz_utils.h"
+#include "utils.h"
 
 #include "mfe_stdv.inc"
 #include "mfe_avg.inc"
