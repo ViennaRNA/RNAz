@@ -39,7 +39,7 @@ Only show results with RNA class probability P > X. (Default: 0.5)
 Print the output including gaps. Useful if the alignment wants to be
 recovered from the RNAz output. (Default: off)
 
-=item B<-s> X, B<--predict-strand>=X
+=item B<-s>, B<--predict-strand>
 
 Experimental feature which scores both strands and gives you a guess which
 direction is more likely to encode a structural RNA. (Default: off)
