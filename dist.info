@@ -14,9 +14,11 @@
 
 7. Update README, NEWS, TODO
 
-8. make dist
+8. Create a tag in CVS:  cvs tag -R rel-1-0
+
+9. make dist
 
 --
-$Id: dist.info,v 1.2 2006-03-26 12:52:17 wash Exp $
+$Id: dist.info,v 1.3 2006-10-12 17:05:28 wash Exp $
 
 
