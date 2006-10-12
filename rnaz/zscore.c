@@ -6,7 +6,7 @@
  *                                                                   *
  *	          c Stefan Washietl, Ivo L Hofacker                      *
  *                                                                   *
- *	   $Id: zscore.c,v 1.5 2006-03-24 15:43:21 wash Exp $            *
+ *	   $Id: zscore.c,v 1.6 2006-10-12 13:19:01 wash Exp $            *
  *                                                                   *
  *********************************************************************/
 
@@ -78,10 +78,14 @@ void predict_values(const char *seq, double *avg, double *stdv) {
   }
 
   length=strlen(seq);
-  
-  GC=((double)(n_G+n_C))/length;
-  A=((double)n_A)/(n_A+n_T);
-  C=((double)n_C)/(n_G+n_C);
+
+  if (length==0 || n_A+n_T==0 || n_G+n_C==0){
+	GC=A=C=0;
+  } else {
+	GC=((double)(n_G+n_C))/length;
+	A=((double)n_A)/(n_A+n_T);
+	C=((double)n_C)/(n_G+n_C);
+  }
 
   node[0].index = 1; node[0].value = GC;
   node[1].index = 2; node[1].value = A;
