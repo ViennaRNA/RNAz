@@ -1,7 +1,10 @@
-- The main goal of future releases is to get rid of sliding windows
-  and allow *local* search for secondary structures.
-
+- Calculate z-scores based on a dinucleotide model. Current model 
+  results in a relatively high rate of false positives due to
+  dinucleotide effects.
+- The SCI dependends unexpectedly strong on the GC content 
+  causing RNAz to be biased towards GC rich alignments. This
+  must be fixed in some way. 
 
 --
-$Id: TODO,v 1.3 2006-03-24 15:41:50 wash Exp $
+$Id: TODO,v 1.4 2006-10-12 16:40:25 wash Exp $
 

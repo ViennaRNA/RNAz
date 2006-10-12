@@ -1,3 +1,11 @@
+Version 1.0
+===========
+
+Final release of version 1.0. Fixed a major bug which caused RNAz to
+crash on 64 bit machines. Fixed a series of smaller bugs in RNAz and
+the helper scripts. Thanks to all people who reported bugs.
+
+
 Version 1.0pre
 ==============
 
@@ -40,5 +48,5 @@ First publicly available version, so everything is new...
 
 
 --
-$Id: NEWS,v 1.5 2006-03-26 12:52:17 wash Exp $
+$Id: NEWS,v 1.6 2006-10-12 16:40:24 wash Exp $
 

@@ -1,4 +1,4 @@
-RNAz  1.0pre
+RNAz  1.0
 ============
 
 Content
@@ -240,5 +240,5 @@ discoverd something biologically interesting using RNAz.
 Stefan Washietl <wash@tbi.univie.ac.at>
 
 --
-$Id: README,v 1.4 2006-03-26 12:52:17 wash Exp $
+$Id: README,v 1.5 2006-10-12 16:40:24 wash Exp $
 
