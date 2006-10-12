@@ -7,7 +7,7 @@
  *                                                                   *
  *	                    Stefan Washietl                              *
  *                                                                   *
- *	   $Id: rnaz_utils.c,v 1.2 2006-03-24 15:43:21 wash Exp $              *
+ *	   $Id: rnaz_utils.c,v 1.3 2006-10-12 13:17:42 wash Exp $              *
  *                                                                   *
  *********************************************************************/
 
@@ -415,11 +415,11 @@ struct aln* createAlnEntry(char* name, char* seq, int start, int length, int ful
 
 
  void printAln(const struct aln* AS[]){
-  int i;
-  for (i=0;AS[i]!=NULL;i++){
-	printf("%s %s\n",AS[i]->name,AS[i]->seq);
-  }
-}
+   int i;
+   for (i=0;AS[i]!=NULL;i++){
+	 printf("%s %s\n",AS[i]->name,AS[i]->seq);
+   }
+ }
 
  int checkFormat(FILE *file){
 
@@ -434,7 +434,6 @@ struct aln* createAlnEntry(char* name, char* seq, int start, int length, int ful
 
 	if (fields==NULL){
 	  free(line);
-	  freeFields(fields);
 	  continue;
 	}
 	
@@ -660,7 +659,12 @@ double combPerPair(struct aln *AS[],char* structure){
 	}
 	i++;
   }
-  return((double)nCombs/nPairs);
+
+  if (nPairs>0){
+	return((double)nCombs/nPairs);
+  } else {
+	return 0.0;
+  }
 }
 
 int encodeBase(char base){
