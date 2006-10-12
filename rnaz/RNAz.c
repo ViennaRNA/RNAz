@@ -7,7 +7,7 @@
  *                                                                   *
  *	          c Stefan Washietl, Ivo L Hofacker                      *
  *                                                                   *
- *	   $Id: RNAz.c,v 1.11 2006-10-12 13:15:22 wash Exp $              *
+ *	   $Id: RNAz.c,v 1.12 2006-10-12 16:58:18 wash Exp $              *
  *                                                                   *
  *********************************************************************/
 
@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
 	  warning(warningString,id,n_seq,z,sci,(struct aln **)window);
 	  
 
-	  fprintf(out,"\n###########################  RNAz "PACKAGE_VERSION"  #############################\n\n");
+	  fprintf(out,"\n############################  RNAz "PACKAGE_VERSION"  ##############################\n\n");
 	  fprintf(out," Sequences: %u\n", n_seq);
 
 	  if (args.window_given){
