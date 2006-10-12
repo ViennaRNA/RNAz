@@ -7,7 +7,7 @@
  *                                                                   *
  *	          c Stefan Washietl, Ivo L Hofacker                      *
  *                                                                   *
- *	   $Id: RNAz.c,v 1.10 2006-03-26 11:57:43 wash Exp $              *
+ *	   $Id: RNAz.c,v 1.11 2006-10-12 13:15:22 wash Exp $              *
  *                                                                   *
  *********************************************************************/
 
@@ -168,6 +168,8 @@ int main(int argc, char *argv[])
   case MAF:
 	readFunction=&read_maf;
 	break;
+  case 0:
+	nrerror("ERROR: Unknown alignment file format. Use Clustal W or MAF format.\n");
   }
 
   /* modelDir=getenv("RNAZDIR");
@@ -183,7 +185,13 @@ int main(int argc, char *argv[])
   countAln=0;
 
   while ((n_seq=readFunction(clust_file, AS))!=0){
+
+	if (n_seq ==1){
+	  nrerror("ERROR: You need at least two sequences in the alignment.\n");
+	}
+	
 	countAln++;
+	
 	length = (int) strlen(AS[0]->seq);
 	
 	/* if a slice is specified by the user */
@@ -321,7 +329,14 @@ int main(int argc, char *argv[])
 
 	  id=meanPairID((const struct aln**)window);
 	  z=sumZ/n_seq;
-	  sci=min_en/(sumMFE/n_seq);
+
+	  if (sumMFE==0){ 
+		/*Set SCI to 0 in the weird case of no structure in single
+		  sequences*/
+		sci=0;
+	  } else {
+		sci=min_en/(sumMFE/n_seq);
+	  }
 
 	  
 	  	  
