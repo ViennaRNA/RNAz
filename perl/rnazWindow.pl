@@ -83,7 +83,14 @@ while (my $alnString=getNextAln($alnFormat,$fh)){
 
   my $fullAln=parseAln($alnString,$alnFormat);
 
+  my @tmp=();
+  foreach (@$fullAln){
+	push @tmp,{%{$_}};
+  }
+  my $shrinkingAln=[@tmp];
+
   my $sliceStart=0;
+  my $prevSliceStart=0;
   my $sliceEnd=0;
   my $length=length($fullAln->[0]->{seq});
 
@@ -97,9 +104,57 @@ while (my $alnString=getNextAln($alnFormat,$fh)){
 	  $sliceStart=0 if ($sliceStart<0);
 	}
 
-	my $slice=sliceAlnByColumn($fullAln,$sliceStart,$sliceEnd);
+	
+	#my $slice=sliceAlnByColumn($fullAln,$sliceStart,$sliceEnd);
+	
 
+	# correct ends without warning if outside of valid range
+	$sliceStart=0 if ($sliceStart<0);
+	$sliceEnd=length($fullAln->[0]->{seq}) if ($sliceEnd > length($fullAln->[0]->{seq}));
+
+	# make deep copy of list of hash
+	my @newAln=();
+	foreach (@$fullAln){
+	  push @newAln,{%{$_}};
+	}
+
+	#print "prev: $prevSliceStart, $sliceStart\n";
+	
+	foreach my $i (0..$#newAln){
+
+	  if ((defined $newAln[$i]->{start}) and (defined $newAln[$i]->{start})){
+		my $oldStart=$newAln[$i]->{start};
+		my $oldEnd=$newAln[$i]->{end};
+		#$newAln[$i]->{start}=alnCol2genomePos($newAln[$i]->{seq},$oldStart,$sliceStart);
+		#$newAln[$i]->{end}=alnCol2genomePos($newAln[$i]->{seq},$oldStart,$sliceEnd-1)+1;
+
+		$newAln[$i]->{start}=alnCol2genomePos($shrinkingAln->[$i]->{seq},
+											  $shrinkingAln->[$i]->{start},
+											  $sliceStart-$prevSliceStart,'after');
+
+		$newAln[$i]->{end}=alnCol2genomePos($shrinkingAln->[$i]->{seq},
+											$shrinkingAln->[$i]->{start},
+											$sliceEnd-$prevSliceStart-1,'before')+1;
+
+		
+	  }
+
+	  $newAln[$i]->{seq}=substr($newAln[$i]->{seq},$sliceStart,$sliceEnd-$sliceStart);
+
+	}
+
+	my $slice=[@newAln];
+	
 	my $sliceLength=$sliceEnd-$sliceStart;
+
+	foreach my $i (0..@{$shrinkingAln}-1){
+
+	  $shrinkingAln->[$i]->{seq}=substr($fullAln->[$i]->{seq},
+										$sliceStart,$length-$sliceStart);
+	  $shrinkingAln->[$i]->{start}=$slice->[$i]->{start};
+	}
+
+	
 	
 	#print "BEFORE:\n";
 	#print(formatAln($slice,"CLUSTAL"));
@@ -223,9 +278,10 @@ while (my $alnString=getNextAln($alnFormat,$fh)){
 	}
 	
   SKIP:
+	$prevSliceStart=$sliceStart;
 	$sliceStart+=$slide;
-	last if ($sliceEnd==$length);
-  }
+	  last if ($sliceEnd==$length);
+   }
 }
 
 __END__
@@ -371,6 +427,5 @@ are printed.
 Stefan Washietl <wash@tbi.univie.ac.at>
 
 =cut
-
 
 
