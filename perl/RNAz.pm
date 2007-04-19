@@ -9,7 +9,7 @@ our @ISA = qw(Exporter);
 
 our @EXPORT_OK = ();
 
-our $rnazVersion='1.0pre';
+our $rnazVersion='1.0';
 
 our @EXPORT = qw(checkFormat
 				 getNextAln
@@ -18,6 +18,7 @@ our @EXPORT = qw(checkFormat
 				 readClustal
 				 parseAln
 				 sliceAlnByColumn
+				 alnCol2genomePos
 				 removeCommonGaps
 				 rangeWarn
 				 revAln
@@ -50,7 +51,7 @@ sub checkFormat{
 	next if /^\s*$/;
 	if (/CLUSTAL/i){
 	  return "CLUSTAL";
-	} elsif (/a score=/){
+	} elsif (/a\s*score\s*=/){
 	  return "MAF"
 	} else {
 	  return "UNKNOWN";
@@ -90,6 +91,8 @@ sub readMAF{
 
 	  my $end=$start+$length;
 
+	  $seq=~s/\./-/g;
+
 	  my $row={name=>$name,
 			   start=>$start,
 			   end=>$end,
@@ -121,12 +124,13 @@ sub readClustal{
 	next if ( /^\s+$/ );
 	next if ( /^\/\/\$/); # ignore block separators '//'
 	my ($seqname, $aln_line) = ('', '');	
-	if ( /^\s*(\S+)\s*\/\s*(\d+)-(\d+)\s+(\S+)\s*$/ ) {
+	if ( /^\s*(\S+)\s*\/\s*(\d+)-(\d+)\s+(\S+)\s*\d*\s*$/ ) {
 	  # clustal 1.4 format
 	  #($seqname,$aln_line) = ("$1/$2-$3",$4);
-	  # We ignore position information and discard it
 	  ($seqname,$aln_line) = ($1,$4);
-	} elsif ( /^(\S+)\s+([A-Z\-]+)\s*$/ ) {
+	  $seqname.="\_$2\_$3";
+	} elsif ( /^(\S+)\s+([A-Z\-]+)\s*\d*\s*$/i ) {
+
 	  ($seqname,$aln_line) = ($1,$2);
 	} else {
 	  next;
@@ -143,6 +147,7 @@ sub readClustal{
   my $N=0;
 
   foreach my $key (keys %input) {
+	$input{$key}=~s/\./-/g;
 	$aln[$order{$key}] = {name=>$key, seq=>$input{$key}};
 	$N++
   }
@@ -271,7 +276,7 @@ sub getNextAln{
 
   while (<$fh>){
 	if ($format eq "MAF"){
-	  last if /a score=/;
+	  last if /a\s*score\s*=/;
 	}
 	if ($format eq "CLUSTAL"){
 	  last if /CLUSTAL/;
@@ -404,8 +409,8 @@ sub sliceAlnByPos{
 	my $oldEnd=$newAln[$i]->{end};
 
 	if ($newAln[$i]->{end}!=0){
-	  $newAln[$i]->{start}=alnCol2genomePos($newAln[$i]->{seq},$oldStart,$colStart);
-	  $newAln[$i]->{end}=alnCol2genomePos($newAln[$i]->{seq},$oldStart,$colEnd-1)+1;
+	  $newAln[$i]->{start}=alnCol2genomePos($newAln[$i]->{seq},$oldStart,$colStart,'after');
+	  $newAln[$i]->{end}=alnCol2genomePos($newAln[$i]->{seq},$oldStart,$colEnd-1,'before')+1;
 	} else {
 	  $newAln[$i]->{start}=0;
 	  $newAln[$i]->{end}=0;
@@ -428,6 +433,9 @@ sub sliceAlnByPos{
 # $seq ... sequence from alignment (i.e. letters with gaps)
 # $start ... Genomic position of first letter in $seq
 # $col ... column in the alignment that is to be mapped
+# $gapDecision ... 'before' or 'after', if column maps to a gap, a decision
+#                  has to be made whether it gets the positon of the
+#                  letter before or after. 
 #
 # Returns genomic position. No error handling, so $col must be a valid
 # column of the string $seq.
@@ -437,7 +445,9 @@ sub sliceAlnByPos{
 
 sub alnCol2genomePos{
 
-  (my $seq, my $start, my $col)=@_;
+  (my $seq, my $start, my $col, my $gapDecision)=@_;
+
+  $gapDecision='after' if (!$gapDecision);
 
   $seq=~s/\./-/g; #Convert all gaps to "-"
 
@@ -446,10 +456,11 @@ sub alnCol2genomePos{
   # if gap only...
   return $start if ($seq=~/^-+$/);
 
+  #print "$seq\n";
   (my $tmp)=$seq=~/(-*)[^-]/;
 
   my $leadingGaps=length($tmp);
-
+  #print "$tmp,$leadingGaps\n";
   # if column is in gap before first letter,
   # return position of the first letter
   return $start if ($col<$leadingGaps);
@@ -459,6 +470,12 @@ sub alnCol2genomePos{
 
   for my $i ($leadingGaps..$col){
 	$newPos++ if ((my $t=substr($seq,$i,1)) ne '-');
+  }
+
+  if (substr($seq,$col,1) eq '-'){
+	if ($gapDecision eq 'after'){
+	  $newPos++;
+	}
   }
   return $newPos;
 }
@@ -575,6 +592,9 @@ sub rangeWarn{
 	my $c=($seq=~tr/C/C/);
 	my $a=($seq=~tr/A/A/);
 	my $t=($seq=~tr/T/T/);
+	my $u=($seq=~tr/U/U/);
+
+	$t+=$u;
 	
 	my $GC=($g+$c)/$length;
 
