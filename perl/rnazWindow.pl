@@ -10,11 +10,13 @@ use Pod::Usage;
 
 my $window=120;
 my $slide=40;
+my $maxLength=undef;
 my $minLength=50;
 my $maxGap=0.25;
 my $maxMasked=0.1;
 my $minN=2;
 my $maxN=6;
+my $numSamples=1;
 my $refSeq=1;
 my $noReference=0;
 my $minID=50;
@@ -23,6 +25,7 @@ my $maxID=100;
 my $forwardStrand=0;
 my $reverseStrand=0;
 my $bothStrands=0;
+my $verbose=0;
 my $version=0;
 my $help=0;
 my $man=0;
@@ -31,10 +34,13 @@ GetOptions('window:i' => \$window,
 		   'w:i' => \$window,
 		   'slide:i' => \$slide,
 		   's:i' => \$slide,
+		   'm:i' => \$maxLength,
+		   'max-length:i' => \$maxLength,
 		   'min-length:i' => \$minLength,
-		   'max-gap:i' => \$maxGap,
-		   'max-masked:i' => \$maxMasked,
+		   'max-gap:f' => \$maxGap,
+		   'max-masked:f' => \$maxMasked,
 		   'max-seqs:i' => \$maxN,
+		   'num-samples:i'=>\$numSamples,
 		   'min-seqs:i' => \$minN,
 		   'min-id:f' => \$minID,
 		   'max-id:f' => \$maxID,
@@ -43,6 +49,7 @@ GetOptions('window:i' => \$window,
 		   'forward'=>\$forwardStrand,
 		   'reverse'=>\$reverseStrand,
 		   'no-reference' => \$noReference,
+		   'verbose'=>\$verbose,
 		   'help'=>\$help,
 		   'man'=>\$man,
 		   'h'=>\$help,
@@ -68,6 +75,8 @@ $forwardStrand=1 if (!$forwardStrand and
 
 $refSeq=0 if ($noReference);
 
+$maxLength=$window if not defined $maxLength;
+
 my $fileName=shift @ARGV;
 my $fh;
 
@@ -79,7 +88,13 @@ if (!defined $fileName){
 
 my $alnFormat=checkFormat($fh);
 
+my $alnCounter=0;
+
 while (my $alnString=getNextAln($alnFormat,$fh)){
+
+  $alnCounter++;
+
+  #print STDERR "Processing aln $alnCounter\n";
 
   my $fullAln=parseAln($alnString,$alnFormat);
 
@@ -94,16 +109,27 @@ while (my $alnString=getNextAln($alnFormat,$fh)){
   my $sliceEnd=0;
   my $length=length($fullAln->[0]->{seq});
 
+
+  if ($length <= $maxLength){
+	$window=$length;
+  }
+
   my $refName=$fullAln->[0]->{name};
 
+  my $windowCounter=0;
+
   while ($sliceStart<$length){
+
+	$windowCounter++;
+
+	#print STDERR "Processing window $windowCounter\n";
+	
 	$sliceEnd=$sliceStart+$window;
 	if ($sliceEnd>$length){
 	  $sliceEnd=$length;
 	  $sliceStart=$length-$window;
 	  $sliceStart=0 if ($sliceStart<0);
 	}
-
 	
 	#my $slice=sliceAlnByColumn($fullAln,$sliceStart,$sliceEnd);
 	
@@ -156,16 +182,18 @@ while (my $alnString=getNextAln($alnFormat,$fh)){
 
 	
 	
-	#print "BEFORE:\n";
-	#print(formatAln($slice,"CLUSTAL"));
+#	print "BEFORE:\n";
+#	print(formatAln($slice,"CLUSTAL"));
 
 	if ($refSeq){
-
 	  my $numGaps=($slice->[0]->{seq}=~tr/-./-/);
 
 	  if ($numGaps/$sliceLength>$maxGap){
 		$slice->[0]=undef;
-		#print "Removing seq 0: too much gaps\n";
+
+		if ($verbose){
+		  print STDERR "Alignment $alnCounter, window $windowCounter: Removing seq 1: too many gaps.\n";
+		}
 	  } else {
 
 		for my $i (1..@$slice-1){
@@ -182,7 +210,10 @@ while (my $alnString=getNextAln($alnFormat,$fh)){
 
 		  if (($numGaps0+$numGaps1)/$tmpLength>$maxGap){
 			$slice->[$i]=undef;
-			#print "Removing seq $i: too much gaps\n";
+			if ($verbose){
+			  my $ii=$i+1;
+			  print STDERR "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too many gaps.\n";
+			}
 		  }
 		}
 	  }
@@ -191,7 +222,10 @@ while (my $alnString=getNextAln($alnFormat,$fh)){
 		my $numGaps=($slice->[$i]->{seq}=~tr/-./-/);
 		if ($numGaps/$sliceLength>$maxGap){
 		  $slice->[$i]=undef;
-		  #print "Removing seq $i: too much gaps\n";
+		  if ($verbose){
+			my $ii=$i+1;
+			print STDERR "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too many gaps.\n";
+		  }
 		}
 	  }
 	}
@@ -201,7 +235,10 @@ while (my $alnString=getNextAln($alnFormat,$fh)){
 	  my $numMasked=($slice->[$i]->{seq}=~tr/a-z/a-z/);
 	  if ($numMasked/$sliceLength>$maxMasked){
 		$slice->[$i]=undef;
-		#print "Removing seq $i: too much masked letters\n";
+		if ($verbose){
+		  my $ii=$i+1;
+		  print STDERR "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too many masked letters.\n";
+		}
 	  }
 	}
 
@@ -209,9 +246,21 @@ while (my $alnString=getNextAln($alnFormat,$fh)){
 	  next if not defined $slice->[$i];
 	  my $tmpSeq=$slice->[$i]->{seq};
 	  #print $tmpSeq, ":",rangeWarn([{seq=>$tmpSeq}]),"\n";
-	  if (rangeWarn([{seq=>$tmpSeq}])){
+	  my $warning=rangeWarn([{seq=>$tmpSeq}]);
+	  if ($warning){
 		$slice->[$i]=undef;
-		#print "Removing seq $i: out of range/too short\n";
+		if ($verbose){
+		  my $ii=$i+1;
+		  if ($warning==1){
+			print STDERR "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too short.\n";
+		  }
+		  if ($warning==2){
+			print STDERR "Alignment $alnCounter, window $windowCounter: Removing seq $ii: base composition out of range.\n";
+		  }
+		  if ($warning==3){
+			print STDERR "Alignment $alnCounter, window $windowCounter: Removing seq $ii: base composition out of range/too short.\n";
+		  }
+		}
 	  }
 	}
 	
@@ -221,15 +270,31 @@ while (my $alnString=getNextAln($alnFormat,$fh)){
 	  push @tmp,$_;
 	}
 	$slice=\@tmp;
-	
+
+
 	# Nothing left
-	goto SKIP if (!@$slice);
+	if (!@$slice){
+	  if ($verbose){
+		print STDERR "Alignment $alnCounter discarded: No sequences left.\n";
+	  }
+	  goto SKIP;
+	}
 
 	# Reference sequence discarded
-	goto SKIP if (($refSeq) and ($slice->[0]->{name} ne $refName));
+	if (($refSeq) and ($slice->[0]->{name} ne $refName)){
+	  if ($verbose){
+		print STDERR "Alignment $alnCounter discarded: Reference sequence was discarded in previous filter steps.\n";
+	  }
+	  goto SKIP;
+	}
 
 	# Too few sequences
-	goto SKIP if (@$slice<$minN);
+	if (@$slice<$minN){
+	  if ($verbose){
+		print STDERR "Alignment $alnCounter discarded: Too few sequences left.\n";
+	  }
+	  goto SKIP;
+	}
 
 	removeCommonGaps($slice);
 
@@ -243,38 +308,57 @@ while (my $alnString=getNextAln($alnFormat,$fh)){
 	  }
 	}
 
+	my $slices;
+
 	if (@$slice > $maxN){
 
-	  $slice=pruneAln(alnRef=>$slice,
+	  $slices=pruneAln(alnRef=>$slice,
 					  maxN=>$maxN,
 					  minN=>2,
 					  optSim=>$optID/100,
 					  maxID=>$maxID/100,
-					  keepfirst=>$refSeq)->[0];
+					  numAln=>$numSamples,
+					  keepfirst=>$refSeq);
+	} else {
+
+	  $slices=[$slice];
+
 	}
 
+	foreach my $slice (@$slices){
 
-	goto SKIP if length($slice->[0]->{seq})<$minLength;
-	
-	goto SKIP if meanPairID($slice)*100<$minID;
-
-
-	my @strands=();
-	
-	push @strands,'+' if $forwardStrand;
-	push @strands,'-' if $reverseStrand;
-	
-	@strands=('+','-') if $bothStrands;
-	
-	foreach my $strand (@strands){
-
-	  if ($strand eq '-'){
-		$slice=revAln($slice);
+	  if (length($slice->[0]->{seq})<$minLength){
+		if ($verbose){
+		  print STDERR "Alignment $alnCounter discarded: Too short.\n";
+		}
+		next;
 	  }
+
+	  if (meanPairID($slice)*100<$minID){
+		if ($verbose){
+		  print STDERR "Alignment $alnCounter discarded: Mean pairwise identity out of range.\n";
+		}
+		next;
+	  }
+
+
+	  my @strands=();
+	
+	  push @strands,'+' if $forwardStrand;
+	  push @strands,'-' if $reverseStrand;
+	
+	  @strands=('+','-') if $bothStrands;
+	
+	  foreach my $strand (@strands){
+
+		if ($strand eq '-'){
+		  $slice=revAln($slice);
+		}
 
 	  #print "\n\nAFTER:\n\n";
 
-	  print formatAln($slice,$alnFormat);
+		print formatAln($slice,$alnFormat);
+	  }
 	}
 	
   SKIP:
@@ -299,13 +383,20 @@ process/filter alignment windows in various ways.
 
 =over 8
 
-=item B<-w, --window>
+=item B<-w, --window>=N
 
 Size of the window (Default: B<120>)
 
-=item B<-s, --slide>
+=item B<-s, --slide>=N
 
-Step size (Default: B<40>)
+Step size (Default: B<120>)
+
+=item B<-m, --max-length>
+
+Slice only alignments longer than N columns. This means blocks longer
+than the window size given by B<--window> but shorter than N are kept
+intact and not sliced. Per default this length is set to the window
+size given by B<--window> (or 120 by default).
 
 =item B<--max-gap>=X
 
@@ -341,6 +432,11 @@ sequences in a window is higher than N, a subset of sequences is used
 with exactly N sequences. The greedy algorithm of the program
 C<rnazSelectSeqs.pl> is used which optimizes for a user specified mean
 pairwise identity (see C<--opt-id>). (Default: B<6>)
+
+=item B<--num-samples>=N
+
+Number of different subsets of sequences that is sampled if there are
+more sequences in the alignment than C<--max-seqs>. (Default: B<1>)
 
 =item B<--min-length>=N
 
@@ -385,6 +481,9 @@ screens of genomic regions. For some other applications it might not
 be necessary and in such cases you can change the default behaviour by
 setting this option.
 
+=item B<--verbose>
+
+Verbose output on STDERR, describing all performed filtering steps.
 
 =item B<-v, --version>
 
