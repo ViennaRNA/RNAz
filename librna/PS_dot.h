@@ -13,9 +13,6 @@ extern int xrna_plot(char *string, char *structure, char *ssfile);
 /*write .ss file for further editing in XRNA */
 extern int PS_dot_plot(char *string, char *file);
 /* produce a PostScript dot plot of the pair probability matix */
-
-
-
 extern int rna_plot_type;   /* 0= simple coordinates, 1= naview */
 
 typedef struct cpair {
@@ -23,9 +20,6 @@ typedef struct cpair {
   float p, hue, sat;
 } cpair;
 extern int PS_color_dot_plot(char *string, cpair *pi, char *filename);
-
-extern int PS_color_aln(char *string, char *consensus, cpair *pi, char *filename, char *seqs[], char *names[]);
-
 
 typedef struct plist {
   int i;
@@ -36,3 +30,5 @@ extern int PS_dot_plot_list(char *seq, char *filename, struct plist *pl,
 			    struct plist *mf, char *comment);
 extern int PS_dot_plot_turn(char *seq, struct plist *pl, char *filename,
 			    int winSize);
+extern int PS_color_aln(const char *structure, const char *filename, 
+			const char *seqs[], const char *names[]);

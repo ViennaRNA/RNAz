@@ -1,4 +1,5 @@
-/* Last changed Time-stamp: <2000-10-10 11:24:26 ivo> */
+/* Last changed Time-stamp: <2006-11-03 16:29:09 ulim> */
+
 /*
        global variables to change behaviour of folding routines
 			  Vienna RNA package
@@ -16,6 +17,7 @@ char *nonstandards = (char *)0; /* contains allowed non standard bases */
 double temperature = 37.0;
 int  james_rule = 1;     /* interior loops of size 2 get energy 0.8Kcal and
 			    no mismatches (no longer used) */
+
 struct bond  *base_pair;
 
 FLT_OR_DBL *pr;          /* base pairing prob. matrix */
@@ -27,6 +29,8 @@ int    noLonelyPairs = 0; /* avoid helices of length 1 */
 char backtrack_type='F';  /* 'C' require (1,N) to be bonded;
 			     'M' seq is part of s multi loop */
 
+int *cut_points;
+int *strand;
 char * option_string(void) {
   static char options[100];
   *options = '\0';

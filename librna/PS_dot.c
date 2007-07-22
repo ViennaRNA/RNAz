@@ -15,7 +15,7 @@
 #include "fold_vars.h"
 #include "PS_dot.h"
 
-static char UNUSED rcsid[] = "$Id: PS_dot.c,v 1.1 2006-12-11 14:27:23 wash Exp $";
+static char UNUSED rcsid[] = "$Id: PS_dot.c,v 1.2 2007-07-22 20:58:48 wash Exp $";
 
 #define PUBLIC
 #define  PRIVATE   static
@@ -66,290 +66,6 @@ extern  int cut_point;   /* set to first pos of second seq for cofolding */
    (nothing else implemented at present)
    default:           no graphics data at all
 */
-
-
-
-int PS_color_aln(char *string, char *consensus, cpair *pi, char *filename, char *seqs[], char *names[]){
-
-  int N,i,j,k,x,y,tmp,columnWidth;
-  char *tmpBuffer,*ss,*ssEscaped,*ruler;
-  char c;
-  float fontWidth, fontHeight, imageHeight, imageWidth,tmpColumns,t;
-  int length, maxName, maxNum, currPos;
-  float lineStep,blockStep,consStep,ssStep,rulerStep,nameStep,numberStep;
-  float maxConsBar,startY,namesX,seqsX, currY;
-  float score,barHeight,xx,yy;
-  int match,block,col;
-  char letterI,letterJ;
-  FILE *outfile;
-
-  const char *alnPlotHeader =
-	"%%!PS-Adobe-3.0 EPSF-3.0\n"
-	"%%%%BoundingBox: %i %i %i %i\n"
-	"%%%%EndComments\n"
-	"%% draws Vienna RNA like colored boxes\n"
-	"/box { %% x1 y1 x2 y2 hue saturation\n"
-	"  gsave\n"
-	"  dup 0.3 mul 1 exch sub sethsbcolor\n"
-	"  exch 3 index sub exch 2 index sub rectfill\n"
-	"  grestore\n"
-	"} def\n"
-	"%% draws a box in current color\n"
-	"/box2 { %% x1 y1 x2 y2\n"
-	"  exch 3 index sub exch 2 index sub rectfill\n"
-	"} def\n"
-	"/string { %% (Text) x y\n"
-	" 6 add\n"
-	" moveto\n"
-	"  show\n"
-	"} def\n"
-	"0 %i translate\n"
-	"1 -1 scale\n"
-	"/Courier findfont\n"
-	"[10 0 0 -10 0 0] makefont setfont\n";
-	
-  
-  outfile = fopen(filename, "w");
-
-  if (outfile == NULL) {
-	fprintf(stderr, "can't open file %s - not doing alignment plot\n", filename);
-	return 0;
-  }
-  
-  columnWidth=60;            /* Display long alignments in blocks of
-								this size */
-  fontWidth=6;               /* Font metrics */
-  fontHeight=6.5;
-  lineStep=fontHeight+2;	 /* distance between lines */
-  blockStep=3.5*fontHeight;  /* distance between blocks */
-  consStep=fontHeight*0.5;	 /* distance between alignment and conservation curve */
-  ssStep=2;                  /* distance between secondary structure
-							   line and sequences */
-  rulerStep=2;               /* distance between sequences and ruler */
-  nameStep=3*fontWidth;	     /* distance between names and sequences */
-  numberStep=fontWidth;      /* distance between sequeces and numbers */
-  maxConsBar=2.5*fontHeight; /* Height of conservation curve */
-  startY=2;			         /* "y origin" */
-  namesX=fontWidth;	         /* "x origin" */
-
-  /* Number of columns of the alignment */
-  length=strlen(seqs[0]);
-
-  /* Allocate memory for various strings, length*2 is (more than)
-	 enough for all of them */
-  tmpBuffer = (char *) space((unsigned) length*2);
-  ss=(char *) space((unsigned) length*2);
-  ssEscaped=(char *) space((unsigned) length*2);
-  ruler=(char *) space((unsigned) length*2);
-  
-  /* Get length of longest name and count sequences in alignment*/
-  i=0; maxName=0; N=0;
-  while (names[i] != NULL){
-	N++;
-	tmp=strlen(names[i]);
-	if (tmp>maxName) {
-	  maxName=tmp;
-	}
-	i++;
-  }
-
-  /* x-coord. where sequences start */
-  seqsX=namesX+maxName*fontWidth+nameStep; 
-
-  /* calculate number of digits of the alignment length */
-  sprintf(tmpBuffer,"%i",length);
-  maxNum=strlen(tmpBuffer);
-  
-
-  /* Calculate bounding box */
-  tmpColumns=columnWidth;
-  if (length<columnWidth){
-	tmpColumns=length;
-  }
-  imageWidth=ceil(namesX+(maxName+tmpColumns+maxNum)*fontWidth+2*nameStep+fontWidth+numberStep);
-  imageHeight=startY+ceil((float)length/columnWidth)*((N+2)*lineStep+blockStep+consStep+ssStep+rulerStep);
-
-  /* Write postscript header including correct bounding box */
-  fprintf(outfile,alnPlotHeader,0,0,(int)imageWidth,(int)imageHeight,(int)imageHeight);
-
-
-  /* Create ruler and secondary structure lines */
-  i=0;
-  /* Init all with dots */
-  for (i=0;i<(length*2);i++){
-	ruler[i]='.';
-	ss[i]='.';
-  }
-  i=0;
-  for (i=0;i<(length*2);i++){
-	/* Write number every 10th position, leave out block breaks */
-	if ((i+1)%10==0 && (i+1)%columnWidth!=0){
-	  sprintf(tmpBuffer,"%i",i+1);
-	  strncpy(ruler+i,tmpBuffer,strlen(tmpBuffer));
-	}
-  }
-  ruler[length]='\0';
-
-  i=0;
-  while (pi[i].j>0){
-	/* Get secondary structure of MFE out of the pi array */
-	if (pi[i].mfe){
-	  ss[pi[i].i-1]='(';
-	  ss[pi[i].j-1]=')';
-	}
-	i++;
-  }
-  ss[length]='\0';
-
-
-  /* Draw color annotation first */
-
-  i=0;
-
-  /* Repeat for all pairs */
-  while (pi[i].j>0){
-	if (pi[i].mfe){
-	  /* Repeat for open and closing position */
-	  for (k=0;k<2;k++){
-		if (k==0) col=pi[i].i-1;
-		if (k==1) col=pi[i].j-1;
-		block=ceil((float)(col+1)/columnWidth);
-		xx=seqsX+(col-(block-1)*columnWidth)*fontWidth;
-		j=0;
-		/* Repeat for each sequence */
-		while (names[j] != NULL){
-		  yy=startY+(block-1)*(lineStep*(N+2)+blockStep+consStep+rulerStep)+ssStep*(block)+(j+1)*lineStep;
-		  
-		  letterI=seqs[j][pi[i].i-1];
-		  letterJ=seqs[j][pi[i].j-1];
-
-		  /* Color according due color information in pi-array, only
-			 if base pair is possible */
-		  if ((letterI=='A' && letterJ=='T') ||
-			  (letterI=='T' && letterJ=='A') ||
-			  (letterI=='G' && letterJ=='C') ||
-			  (letterI=='C' && letterJ=='G') ||
-			  (letterI=='G' && letterJ=='T') ||
-			  (letterI=='T' && letterJ=='G')){
-			
-			fprintf(outfile, "%.1f %.1f %.1f %.1f %.2f %.2f box\n",
-					xx,yy-1,xx+fontWidth,yy+fontHeight+1,pi[i].hue,pi[i].sat);
-		  }
-		  j++;
-		}
-	  }
-	}
-	i++;
-  }
-
-  /* Process rest of the output in blocks of columnWidth */
-
-
-  currY=startY;
-  currPos=0;
-
-  while (currPos<length) {
-
-
-	/* Display secondary structure line */
-	fprintf(outfile,"0 setgray\n");
-	strncpy(tmpBuffer,ss+currPos,columnWidth);
-	tmpBuffer[columnWidth]='\0';
-
-	x=0;y=0;
-	while (c=tmpBuffer[x]){
-	  if (c=='.'){
-		ssEscaped[y++]='.';
-	  } else {
-		ssEscaped[y++]='\\';
-		ssEscaped[y++]=c;
-	  }			 
-	  x++;
-	}
-	ssEscaped[y]='\0';
-		
-	fprintf(outfile, "(%s) %.1f %.1f string\n", ssEscaped,seqsX,currY);
-	currY+=ssStep+lineStep;
-
-	/* Display names, sequences and numbers */
-	
-	i=0;
-	while (names[i] != NULL){
-
-	  strncpy(tmpBuffer,seqs[i]+currPos,columnWidth);
-	  tmpBuffer[columnWidth]='\0';
-
-	  match=0;
-	  for (j=0;j<(currPos+strlen(tmpBuffer));j++){
-		if (seqs[i][j] != '-') match++;
-	  }
-	  
-	  fprintf(outfile, "(%s) %.1f %.1f string\n", names[i],namesX,currY);
-	  fprintf(outfile, "(%s) %.1f %.1f string\n", tmpBuffer,seqsX,currY);
-	  fprintf(outfile, "(%i) %.1f %.1f string\n", match,seqsX+fontWidth*(strlen(tmpBuffer))+numberStep,currY);
-	  
-
-      currY+=lineStep;
-	  i++;
-	
-	}
-	currY+=rulerStep;
-	strncpy(tmpBuffer,ruler+currPos,columnWidth);
-	tmpBuffer[columnWidth]='\0';
-	fprintf(outfile, "(%s) %.1f %.1f string\n", tmpBuffer,seqsX,currY);
-
-	currY+=lineStep;
-	currY+=consStep;
-
-	/*Display conservation bar*/
-	
-	fprintf(outfile,"0.6 setgray\n");
-	for (i=currPos;(i<currPos+columnWidth && i<length);i++){
-	  match=0;
-	  for (j=0;j<N;j++){
-		if (consensus[i] == seqs[j][i]) match++;
-		if (consensus[i]=='U' && seqs[j][i]=='T') match++;
-		if (consensus[i]=='T' && seqs[j][i]=='U') match++;
-	  }
-	  score=(float)(match-1)/(N-1);
-
-	  if (consensus[i] == '-' ||
-		  consensus[i] == '_' ||
-		  consensus[i] == '.'){
-		score=0;
-	  }
-	  
-	  barHeight=maxConsBar*score;
-      if (barHeight==0){
-		barHeight=1;
-	  }
-
-      xx=seqsX+(i-(columnWidth*currPos/columnWidth))*fontWidth;
-
- 	  fprintf(outfile,"%.1f %.1f %.1f %.1f box2\n",
-			  xx,
-			  currY+maxConsBar-barHeight,
-			  xx+fontWidth,
-			  currY+maxConsBar);
-	}
-
-	currY+=blockStep;
-	currPos+=columnWidth;
-  }
-
-
-  fprintf(outfile,"showpage\n");
-  fclose(outfile);
-
-  free(tmpBuffer);free(ss);
-  free(ssEscaped);free(ruler);
-  
-  return 0;
-
-}
-
-
-
 
 PUBLIC int gmlRNA(char *string, char *structure, char *ssfile, char option)
 {
@@ -572,7 +288,23 @@ static const char *anote_macros =
 "    closepath fill stroke\n"
 "   grestore\n"
 "} bind def\n"
-"end\n\n";
+"/hsb {\n"
+"    dup 0.3 mul 1 exch sub sethsbcolor\n"
+"} bind def\n"
+"/colorpair { % i j hue sat colorpair\n"
+"   % draw basepair i,j in color\n"
+"   % 1 index 0.00 ne {\n"
+"   gsave\n"
+"   newpath\n"
+"   hsb\n"
+"   fsize setlinewidth\n"
+"   1 sub coor exch get aload pop moveto\n"
+"   1 sub coor exch get aload pop lineto\n"
+"   stroke\n"
+"   grestore\n"
+"   % } if\n"
+"} bind def\n"
+ "end\n\n";
 
 int PS_rna_plot_a(char *string, char *structure, char *ssfile, char *pre, char *post)
 {
@@ -657,6 +389,9 @@ int PS_rna_plot_a(char *string, char *structure, char *ssfile, char *pre, char *
   fprintf(xyplot, "] def\n\n");
 
   fprintf(xyplot, "init\n\n");
+  
+  fprintf(xyplot, "drawoutline\n");
+
   /* draw the data */
   if (pre) {
     fprintf(xyplot, "%% Start Annotations\n");
@@ -665,7 +400,6 @@ int PS_rna_plot_a(char *string, char *structure, char *ssfile, char *pre, char *
   }
   fprintf(xyplot,
 	  "%% switch off outline pairs or bases by removing these lines\n"
-	  "drawoutline\n"
 	  "drawpairs\n"
 	  "drawbases\n");
 
@@ -765,7 +499,7 @@ int svg_rna_plot(char *string, char *structure, char *ssfile)
     int j;
     if ((j=pair_table[i])>i)
       fprintf(xyplot,
-	      "      \"<line id=\"%d,%d\" x1=\"%6.3f\" y1=\"%6.3f\" x2=\"%6.3f\" y2=\"%6.3f\" />\n",
+	      "      <line id=\"%d,%d\" x1=\"%6.3f\" y1=\"%6.3f\" x2=\"%6.3f\" y2=\"%6.3f\" />\n",
 	      i,j, X[i-1], Y[i-1], X[j-1], Y[j-1]);
   }
   fprintf(xyplot, "    </g>\n");
@@ -1015,7 +749,7 @@ int PS_dot_plot(char *string, char *wastlfile) {
   for (k=0; k<mf_num; k++) {
     mf[k].i = base_pair[k+1].i;
     mf[k].j = base_pair[k+1].j;
-    mf[k].p = 0.95;
+    mf[k].p = 0.95*0.95;
   }
   mf[k].i=0;
   mf[k].j=0;
@@ -1195,8 +929,8 @@ PUBLIC int PS_dot_plot_list(char *seq, char *wastlfile,
 
   /* print boxes in lower left half (mfe) */
   for (pl1=mf; pl1->i>0; pl1++) {
-    tmp=pl1->p;
-    fprintf(wastl,"%d %d %1.9f lbox\n", pl1->i, pl1->j, tmp);
+    tmp = sqrt(pl1->p);
+    fprintf(wastl,"%d %d %1.7f lbox\n", pl1->i, pl1->j, tmp);
   }
 
   fprintf(wastl,"showpage\n"
@@ -1393,4 +1127,271 @@ static FILE * PS_dot_common(char *seq, char *wastlfile,
 	    "0 len moveto len 0 lineto stroke \n\n"
 	    "drawgrid\n");
   return(wastl);
+}
+
+#include "pair_mat.h"
+#include "aln_util.h"
+int PS_color_aln(const char *structure, const char *filename, 
+		 const char *seqs[], const char *names[]) {
+  /* produce PS sequence alignment color-annotated by consensus structure */
+
+  int N,i,j,k,x,y,tmp,columnWidth;
+  char *tmpBuffer,*ssEscaped,*ruler, *cons;
+  char c;
+  float fontWidth, fontHeight, imageHeight, imageWidth,tmpColumns;
+  int length, maxName, maxNum, currPos;
+  float lineStep,blockStep,consStep,ssStep,rulerStep,nameStep,numberStep;
+  float maxConsBar,startY,namesX,seqsX, currY;
+  float score,barHeight,xx,yy;
+  int match,block;
+  FILE *outfile;
+  short *pair_table;
+  char * colorMatrix[6][3] = {
+    {"0.0 1", "0.0 0.6",  "0.0 0.2"},  /* red    */
+    {"0.16 1","0.16 0.6", "0.16 0.2"}, /* ochre  */
+    {"0.32 1","0.32 0.6", "0.32 0.2"}, /* turquoise */
+    {"0.48 1","0.48 0.6", "0.48 0.2"}, /* green  */
+    {"0.65 1","0.65 0.6", "0.65 0.2"}, /* blue   */
+    {"0.81 1","0.81 0.6", "0.81 0.2"} /* violet */
+  };
+
+  const char *alnPlotHeader =
+	"%%!PS-Adobe-3.0 EPSF-3.0\n"
+	"%%%%BoundingBox: %i %i %i %i\n"
+	"%%%%EndComments\n"
+	"%% draws Vienna RNA like colored boxes\n"
+	"/box { %% x1 y1 x2 y2 hue saturation\n"
+	"  gsave\n"
+	"  dup 0.3 mul 1 exch sub sethsbcolor\n"
+	"  exch 3 index sub exch 2 index sub rectfill\n"
+	"  grestore\n"
+	"} def\n"
+	"%% draws a box in current color\n"
+	"/box2 { %% x1 y1 x2 y2\n"
+	"  exch 3 index sub exch 2 index sub rectfill\n"
+	"} def\n"
+	"/string { %% (Text) x y\n"
+	" 6 add\n"
+	" moveto\n"
+	"  show\n"
+	"} def\n"
+	"0 %i translate\n"
+	"1 -1 scale\n"
+	"/Courier findfont\n"
+	"[10 0 0 -10 0 0] makefont setfont\n";
+	
+  
+  outfile = fopen(filename, "w");
+
+  if (outfile == NULL) {
+    fprintf(stderr, "can't open file %s - not doing alignment plot\n", 
+	    filename);
+    return 0;
+  }
+  
+  columnWidth=60;            /* Display long alignments in blocks of this size */
+  fontWidth=6;               /* Font metrics */
+  fontHeight=6.5;
+  lineStep=fontHeight+2;     /* distance between lines */
+  blockStep=3.5*fontHeight;  /* distance between blocks */
+  consStep=fontHeight*0.5;   /* distance between alignment and conservation curve */
+  ssStep=2;                  /* distance between secondary structure line and sequences */
+  rulerStep=2;               /* distance between sequences and ruler */
+  nameStep=3*fontWidth;	     /* distance between names and sequences */
+  numberStep=fontWidth;      /* distance between sequeces and numbers */
+  maxConsBar=2.5*fontHeight; /* Height of conservation curve */
+  startY=2;		     /* "y origin" */
+  namesX=fontWidth;	     /* "x origin" */
+
+  /* Number of columns of the alignment */
+  length=strlen(seqs[0]);
+
+  /* Allocate memory for various strings, length*2 is (more than)
+	 enough for all of them */
+  tmpBuffer = (char *) space((unsigned) length*2);
+  ssEscaped=(char *) space((unsigned) length*2);
+  ruler=(char *) space((unsigned) length*2);
+
+  pair_table=make_pair_table(structure);
+  /* Get length of longest name and count sequences in alignment*/
+
+  for (i=maxName=N=0; names[i] != NULL; i++) {
+    N++;
+    tmp=strlen(names[i]);
+    if (tmp>maxName)  maxName=tmp;
+  }
+
+  
+  /* x-coord. where sequences start */
+  seqsX=namesX+maxName*fontWidth+nameStep; 
+
+  /* calculate number of digits of the alignment length */
+  snprintf(tmpBuffer,length, "%i",length);
+  maxNum=strlen(tmpBuffer);
+  
+
+  /* Calculate bounding box */
+  tmpColumns=columnWidth;
+  if (length<columnWidth){
+	tmpColumns=length;
+  }
+  imageWidth=ceil(namesX+(maxName+tmpColumns+maxNum)*fontWidth+2*nameStep+fontWidth+numberStep);
+  imageHeight=startY+ceil((float)length/columnWidth)*((N+2)*lineStep+blockStep+consStep+ssStep+rulerStep);
+
+  /* Write postscript header including correct bounding box */
+  fprintf(outfile,alnPlotHeader,0,0,(int)imageWidth,(int)imageHeight,(int)imageHeight);
+
+  /* Create ruler and secondary structure lines */
+  i=0;
+  /* Init all with dots */
+  for (i=0;i<(length);i++){
+	ruler[i]='.';
+  }
+  i=0;
+  for (i=0;i<length;i++){
+	/* Write number every 10th position, leave out block breaks */
+	if ((i+1)%10==0 && (i+1)%columnWidth!=0){
+	  snprintf(tmpBuffer,length,"%i",i+1);
+	  strncpy(ruler+i,tmpBuffer,strlen(tmpBuffer));
+	}
+  }
+  ruler[length]='\0';
+  
+  /* Draw color annotation first */
+  /* Repeat for all pairs */
+  for (i=1; i<=length; i++) {
+    if ((j=pair_table[i])>i) {
+      /* Repeat for open and closing position */
+      for (k=0;k<2;k++){
+	int pairings, nonpair, s, col;
+	int ptype[8] = {0,0,0,0,0,0,0,0};
+	char *color;
+	col = (k==0)?i-1:j-1;
+	block=ceil((float)(col+1)/columnWidth);
+	xx=seqsX+(col-(block-1)*columnWidth)*fontWidth;
+	/* Repeat for each sequence */
+	for (s=pairings=nonpair=0; s<N; s++) {
+	  ptype[BP_pair[ENCODE(seqs[s][i-1])][ENCODE(seqs[s][j-1])]]++;
+	}
+	for (pairings=0,s=1; s<=7; s++) {
+	  if (ptype[s]) pairings++;
+	}
+	nonpair=ptype[0];
+	if (nonpair <=2) {
+	  color = colorMatrix[pairings-1][nonpair];
+	  for (s=0; s<N; s++) {
+	    yy=startY+(block-1)*(lineStep*(N+2)+blockStep+consStep+rulerStep)+ssStep*(block)+(s+1)*lineStep;
+	    
+	    /* Color according due color information in pi-array, only if base pair is possible */
+	    if (BP_pair[ENCODE(seqs[s][i-1])][ENCODE(seqs[s][j-1])]) {
+
+	      fprintf(outfile, "%.1f %.1f %.1f %.1f %s box\n",
+		      xx,yy-1,xx+fontWidth,yy+fontHeight+1,color);
+	    }
+	  }
+	}
+      }
+    }
+  }
+  free(pair_table);
+
+  /* Process rest of the output in blocks of columnWidth */
+
+  currY=startY;
+  currPos=0;
+
+  cons =  consensus(seqs);
+  
+  while (currPos<length) {
+
+    /* Display secondary structure line */
+    fprintf(outfile,"0 setgray\n");
+    strncpy(tmpBuffer,structure+currPos,columnWidth);
+    tmpBuffer[columnWidth]='\0';
+    
+    x=0;y=0;
+    while ((c=tmpBuffer[x])){
+      if (c=='.'){
+	ssEscaped[y++]='.';
+      } else {
+	ssEscaped[y++]='\\';
+	ssEscaped[y++]=c;
+      }			 
+      x++;
+    }
+    ssEscaped[y]='\0';
+    
+    fprintf(outfile, "(%s) %.1f %.1f string\n", ssEscaped,seqsX,currY);
+    currY+=ssStep+lineStep;
+    
+    /* Display names, sequences and numbers */
+
+    for (i=0; i<N; i++) {
+      
+      strncpy(tmpBuffer,seqs[i]+currPos,columnWidth);
+      tmpBuffer[columnWidth]='\0';
+      
+      match=0;
+      for (j=0;j<(currPos+strlen(tmpBuffer));j++){
+	if (seqs[i][j] != '-') match++;
+      }
+      
+      fprintf(outfile, "(%s) %.1f %.1f string\n", names[i],namesX,currY);
+      fprintf(outfile, "(%s) %.1f %.1f string\n", tmpBuffer,seqsX,currY);
+      fprintf(outfile, "(%i) %.1f %.1f string\n", match,seqsX+fontWidth*(strlen(tmpBuffer))+numberStep,currY);
+      currY+=lineStep;
+    }
+    currY+=rulerStep;
+    strncpy(tmpBuffer,ruler+currPos,columnWidth);
+    tmpBuffer[columnWidth]='\0';
+    fprintf(outfile, "(%s) %.1f %.1f string\n", tmpBuffer,seqsX,currY);
+    
+    currY+=lineStep;
+    currY+=consStep;
+    
+    /*Display conservation bar*/
+    
+    fprintf(outfile,"0.6 setgray\n");
+    for (i=currPos;(i<currPos+columnWidth && i<length);i++){
+      match=0;
+      for (j=0;j<N;j++){
+	if (cons[i] == seqs[j][i]) match++;
+	if (cons[i]=='U' && seqs[j][i]=='T') match++;
+	if (cons[i]=='T' && seqs[j][i]=='U') match++;
+      }
+      score=(float)(match-1)/(N-1);
+      
+      if (cons[i] == '-' ||
+	  cons[i] == '_' ||
+	  cons[i] == '.'){
+	score=0;
+      }
+      
+      barHeight=maxConsBar*score;
+      if (barHeight==0){
+	barHeight=1;
+      }
+      
+      xx=seqsX+(i-(columnWidth*currPos/columnWidth))*fontWidth;
+      
+      fprintf(outfile,"%.1f %.1f %.1f %.1f box2\n",
+	      xx,
+	      currY+maxConsBar-barHeight,
+	      xx+fontWidth,
+	      currY+maxConsBar);
+    }
+    
+    currY+=blockStep;
+    currPos+=columnWidth;
+  }
+  free(cons);
+
+  fprintf(outfile,"showpage\n");
+  fclose(outfile);
+
+  free(tmpBuffer);
+  free(ssEscaped);free(ruler);
+  
+  return 0;
+
 }
