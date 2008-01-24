@@ -51,7 +51,7 @@ sub checkFormat{
 	next if /^\s*$/;
 	if (/CLUSTAL/i){
 	  return "CLUSTAL";
-	} elsif (/a\s*score\s*=/){
+	} elsif (/^a/){
 	  return "MAF"
 	} else {
 	  return "UNKNOWN";
@@ -276,7 +276,7 @@ sub getNextAln{
 
   while (<$fh>){
 	if ($format eq "MAF"){
-	  last if /a\s*score\s*=/;
+	  last if /^a/;
 	}
 	if ($format eq "CLUSTAL"){
 	  last if /CLUSTAL/;
@@ -1172,6 +1172,8 @@ sub blastSeq{
   open(TMP,">/tmp/blast$$.fa");
 
   print TMP ">dummy\n$seq\n";
+
+  close(TMP);
 
   my @results=`$blastExecutable -p blastn -e $cutoff -d $db -m 8 -i /tmp/blast$$.fa`;
 

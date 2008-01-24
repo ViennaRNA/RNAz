@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: rnazIndex.pl,v 1.2 2006-03-24 15:43:13 wash Exp $
+# $Id: rnazIndex.pl,v 1.3 2008-01-24 10:26:45 wash Exp $
 
 use strict;
 use FindBin;
@@ -11,6 +11,7 @@ use Pod::Usage;
 
 my $gff=0;
 my $bed=0;
+my $fasta=0;
 my $clusters=0;
 my $hits=0;
 my $help='';
@@ -18,17 +19,25 @@ my $ucsc='';
 my $version=0;
 my $man=0;
 my $html='';
+my $seqDir='';
+my $forward=0;
+my $reverse=0;
 
 GetOptions('gff' => \$gff,
 		   'g' => \$gff,
 		   'bed' => \$bed,
+		   'fasta'=>\$fasta,
+		   'f'=>\$fasta,
 		   'b' => \$bed,
 		   'loci' => \$clusters,
+		   'forward'=>\$forward,
+		   'reverse'=>\$reverse,
 		   'l' => \$clusters,
 		   'windows' => \$hits,
 		   'w' => \$hits,
 		   'ucsc'=>\$ucsc,
 		   'html'=>\$html,
+		   'seq-dir:s' => \$seqDir,
 		   'version'=>\$version,
 		   'v'=>\$version,
 		   'help'=>\$help,
@@ -47,7 +56,8 @@ if ($version){
 
 
 ($clusters)=1 if (!$clusters and !$hits);
-$bed=1 if (!$bed and !$gff);
+$forward=1 if (!$forward and !$reverse);
+$bed=1 if (!$bed and !$gff and !$fasta);
 
 my ($seqID, $name, $start, $end, $P, $strand);
 
@@ -55,6 +65,13 @@ $,="\t";
 
 my $isCluster=0;
 my $isHit=0;
+
+if (($fasta) and (not -d $seqDir)){
+
+  print STDERR "ERROR: Sequence directory '$seqDir' does not exist.\n";
+  exit(1);
+}
+
 
 if ($html){
 
@@ -213,15 +230,81 @@ while (my $line=<>){
 
   if ($gff){
 	if ($isCluster and $clusters){
-	  print $seqID,"RNAz",$start+1,$end,$P,".",".","id \"$name\"","\n";
+	  print $seqID,"RNAz","structuredRNA",$start+1,$end,$P,".","id \"$name\"","\n";
 	}
 	if ($isHit and $hits){
-	  print $seqID,"RNAz",$start+1,$end,$P,$strand,".","id \"$name\"","\n";
+	  print $seqID,"RNAz","structuredRNA",$start+1,$end,$P,$strand,"id \"$name\"","\n";
+	}
+  }
+
+  if ($fasta){
+	if ($isCluster and $clusters){
+
+	  if ($forward) {
+		$strand='+';
+	  } else {
+		$strand='-';
+	  }
+
+	  print ">$name ($seqID:$start..$end,$strand)\n";
+	  my $seq=extractSeq($seqID,$start,$end);
+	  $seq=~s/(.{60})/$1\n/g;
+	  chomp($seq);
+	  print $seq,"\n";
+	}
+	if ($isHit and $hits){
+	  print ">$name ($seqID:$start..$end,$strand)\n";
+	  my $seq=extractSeq($seqID,$start,$end,$strand);
+	  $seq=~s/(.{60})/$1\n/g;
+	  chomp($seq);
+	  print $seq,"\n";
 	}
   }
 }
 }
 
+
+sub extractSeq{
+
+  (my $chrom, my $start, my $end, my $strand)=@_;
+
+  my @guess=($chrom);
+
+  if ($chrom =~ /^(.*)\.(.*)$/){
+	push @guess,$2;
+  }
+
+  my $tmp=$#guess;
+  foreach my $i (0..$tmp) {
+	push @guess,$guess[$i].".fa";
+	push @guess,$guess[$i].".fasta";
+  }
+
+  my $realFile='';
+
+  foreach my $file (@guess){
+	if (-e "$seqDir/$file"){
+	  $realFile="$seqDir/$file";
+	  last;
+	}
+  }
+
+  if (not $realFile){
+
+	my @string=();
+	
+	foreach my $entry (@guess){
+	  push @string, "\"$seqDir/$entry\"";
+	}
+	my $tmp=join(' or ',@string);
+	print STDERR "No sequence data for '$chrom' found.\n";
+	print STDERR "I could not find files named: $tmp";
+	return ("");
+  } else {
+	return getSeq($realFile, $start, $end, $strand);
+  }
+
+}
 
 __END__
 
@@ -245,6 +328,31 @@ Generate GFF formatted output.
 =item B<-b, --bed>
 
 Generate BED formatted output.
+
+=item B<-f, --fasta>
+
+Get sequences in FASTA format for loci or windows. See options
+C<--seq-dir>, C<--forward>, C<--reverse>!
+
+=item B<--seq-dir>
+
+Directory with sequence files. You only need this for FASTA output
+(see option C<--fasta>). The files should be named with the sequence
+identifier and the extension C<.fa> or C<.fasta>. If your identifier
+in your input file is for example C<contig100> then you should have a
+file named C<contig100.fa>. (If your identifier is of the form
+``assembly.chromosome" as for example used by UCSC alignments, it is
+also possible to name the file C<chr22.fa> for a sequence identifier
+C<hg17.chr22>).
+
+=item B<--forward, --reverse>
+
+Only relevant for FASTA output (see option C<--fasta>). You can set if
+you want the forward or reverse complement of the sequence
+corresponding to a locus. Since loci don't have strand information you
+might consider both strands for further analysis. Windows have strand
+information, so if you export windows as FASTA these options are
+ignored.
 
 =item B<--ucsc>
 
@@ -310,6 +418,10 @@ Create UCSC style BED format.
  # rnazIndex.pl --html results.dat > results/index.html
 
 Generates HTML formatted table.
+
+ # rnazIndex.pl --forward --fasta --seq-dir=seq results.dat
+
+Exports sequences in FASTA format.
 
 =head1 AUTHOR
 

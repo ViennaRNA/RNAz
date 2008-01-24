@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: rnazCluster.pl,v 1.3 2006-10-12 13:22:29 wash Exp $
+# $Id: rnazCluster.pl,v 1.4 2008-01-24 10:26:45 wash Exp $
 
 use strict;
 use FindBin;
@@ -16,6 +16,7 @@ my $printHits=0;
 my $printClusters=0;
 my $printHeader=0;
 my $html=0;
+my $htmlDir='results';
 my $version=0;
 my $man=0;
 my $help=0;
@@ -28,6 +29,14 @@ my $colorrnaProg='colorrna.pl';
 my $coloralnProg='coloraln.pl';
 
 
+# Under Windows automatically add ".exe" if it is not already done
+
+if ("$^OS"=~/Win32/i){
+
+  $alifoldProg.=".exe" if (not $alifoldProg=~/\.exe/);
+  $gsProg.=".exe" if (not $gsProg=~/\.exe/);
+
+}
 
 
 GetOptions('cutoff:f' => \$cutoff,
@@ -39,6 +48,7 @@ GetOptions('cutoff:f' => \$cutoff,
 		   'header'=>\$printHeader,
 		   'd'=>\$printHeader,
 		   'html'=>\$html,
+		   'html-dir:s'=>\$htmlDir,
 		   'version'=>\$version,
 		   'man'=>\$man,
 		   'v'=>\$version,
@@ -72,24 +82,30 @@ if ($printHeader){
 }
 
 if ($html){
-  mkdir "results" || die("Could not create directory for HTML files ($!)");
+  mkdir($htmlDir) || die("Could not create directory for HTML files ($!)");
 
   my $alifoldFlag=0;
   my $colorrnaFlag=0;
   my $coloralnFlag=0;
   my $gsFlag=0;
 
+  # Search in PATH for executables
   my @PATH=File::Spec->path();
-
-  foreach my $dir ("",@PATH){
-	
+  foreach my $dir (@PATH){
 	$alifoldFlag=1 if (-x File::Spec->catfile($dir, $alifoldProg));
-	$colorrnaFlag=1 if (-x File::Spec->catfile($dir, $colorrnaProg));
-	$coloralnFlag=1 if (-x File::Spec->catfile($dir, $coloralnProg));
 	$gsFlag=1 if (-x File::Spec->catfile($dir, $gsProg));
-	
+	# Test for existance on perl-scripts since in Windows they are not
+	# identified by -x because they are no .exe
+	$colorrnaFlag=1 if (-e File::Spec->catfile($dir, $colorrnaProg));
+	$coloralnFlag=1 if (-e File::Spec->catfile($dir, $coloralnProg));
 	last if $alifoldFlag && $colorrnaFlag && $coloralnFlag && $gsFlag;
   }
+
+  # Check if a full path to the executables has been set
+  $alifoldFlag=1 if (-x $alifoldProg);
+  $gsFlag=1 if (-x $gsProg);
+  $colorrnaFlag=1 if (-e $colorrnaProg);
+  $coloralnFlag=1 if (-e $coloralnProg);
 
   if (!($alifoldFlag && $colorrnaFlag && $coloralnFlag && $gsFlag)){
 
@@ -137,6 +153,8 @@ if (!defined $fileName){
 
 while (my $rnazString=getNextRNAz($fh)){
 
+  #print $rnazString,"\n====================================\n";
+
   my $results=parseRNAz($rnazString);
 
   $currStart=$results->{refSeqStart};
@@ -144,9 +162,12 @@ while (my $rnazString=getNextRNAz($fh)){
   $currName=$results->{refSeqName};
   $currStrand=$results->{refSeqStrand};
 
-  if ($results->{P}>$cutoff){
-	
+  if ($results->{P}>=$cutoff){
+#	print %$results;
 	# if there is NO overlap start new cluster
+
+	#print "$currName $prevName $currStart $prevEnd\n";
+
 	if (!(($currName eq $prevName) and ($currStart <= $prevEnd))){
 
 	  if ($maxEnd!=0){ # omit first one
@@ -222,7 +243,6 @@ if (@hits){
   if ($html){
     	createHTML(\@hits);
   }
-				    
 }
 
 sub toPNG{
@@ -254,6 +274,8 @@ sub createHTML{
 
   my @hits=@{$_[0]};
 
+
+  
   my $locusTemplate='
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
@@ -268,8 +290,7 @@ sub createHTML{
     H1 {font-size: 20pt;color:#333399;text-align: center;font-family: helvetica,arial,impact,sans-serif;padding: 10px;}
     H2 {color:#FFFFFF; background-color:#333399;width: auto; padding:3px; border-width:normal;font-size: 14pt; font-family:helvetica,arial,impact,sans-serif;}
     IMG {border-style:solid; border-width:thin; border-color:black;}
-    PRE {font-size:10pt;font-family:courier,monospace;border-style:solid; border-width:thin;padding:5px;background-color:#e5e8ff;}
-
+    PRE {font-size:9pt;border-style:solid; border-width:thin;padding:5px;background-color:#e5e8ff;}
 
 </STYLE>
   </head>
@@ -331,7 +352,7 @@ sub createHTML{
 
 ';
 
-  chdir "results";
+  chdir $htmlDir;
   mkdir "locus$clusterID";
   chdir "locus$clusterID";
 
@@ -388,8 +409,19 @@ sub createHTML{
 
 	$hitsOutput.=$tmpWindowTemplate;
 	$tmpWindowTemplate=$windowTemplate;
+
+	my $firstLength=length($hit->{aln}->[0]->{seq});
+
+	foreach my $s (@{$hit->{aln}}){
+	  if (length($s->{seq}) != $firstLength){
+		print STDERR "WARNING: Unequal lengths in alignment. Use the --show-gaps option in your RNAz command.\n";
+	  }
+	}
+
 	open(ALN,">$id.maf");
 
+	
+	
 	print ALN formatAln($hit->{aln},"MAF");
 
 	close(ALN);
@@ -403,10 +435,12 @@ sub createHTML{
 			
 	print ALN formatAln($hit->{aln},"CLUSTAL");
 
+	
+
 
 	my $devnull=File::Spec->devnull();
-	system("$alifoldProg -p <$id.aln >$devnull 2>$devnull");
-	system("$coloralnProg < $id.aln >$id\_aln.ps");
+	system("$alifoldProg -p $id.aln >$devnull 2>$devnull");
+	system("$coloralnProg  $id.aln >$id\_aln.ps");
 	system("$colorrnaProg alirna.ps alidot.ps >$id\_alirna.ps");
 	unlink("alirna.ps");
 	rename("alidot.ps","$id\_alidot.ps");
@@ -704,6 +738,10 @@ C<rnazCluster.pl> script. Please note that if you use this option the
 program will get B<very slow> because the figures have to be
 generated. It is also important that you have run RNAz with the
 B<C<--show-gaps>> option!
+
+=item B<--html-dir>
+
+Name of directory where HTML pages are stored. Default: B<results>
 
 =item B<-v, --version>
 

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: rnazMAF2BED.pl,v 1.2 2006-03-24 15:43:14 wash Exp $
+# $Id: rnazMAF2BED.pl,v 1.3 2008-01-24 10:26:45 wash Exp $
 
 
 #TODO: handle UCSC style a la: hg17.chr17
@@ -16,10 +16,13 @@ use Pod::Usage;
 my $help='';
 my $seqID='';
 my $version=0;
+my $cluster=0;
 my $man='';
 
 GetOptions('--seq-id=s'=>\$seqID,
 		   '-s=s'=>\$seqID,
+		   '--cluster'=>\$cluster,
+		   '-c'=>\$cluster,
 		   'version'=>\$version,
 		   'v'=>\$version,
 		   'help'=>\$help,
@@ -36,22 +39,90 @@ if ($version){
   exit(0);
 }
 
+if (!$cluster){
 
-while (my $line=<>){
+  while (my $line=<>){
 
-  chomp($line);
+	chomp($line);
 
-  if ($line=~/^s\s+(.+?)\s+(\d+)\s+(\d+).*/){
+	if ($line=~/^s\s+(.+?)\s+(\d+)\s+(\d+).*/){
 
-	my ($id,$start,$length)=($1,$2,$3);
+	  my ($id,$start,$length)=($1,$2,$3);
 
-	my $end=$start+$length;
-	
-	if ($id=~/$seqID/){
-	  print "$id\t$start\t$end\n";
+	  # Use first ID in first alignment as reference if no --seq-id is
+	  # given
+	  if (not $seqID){
+		if ($id=~/(.*)\..*/){
+		  $seqID=$1;
+		} else {
+		  $seqID=$id;
+		}
+	  }
+
+	  my $end=$start+$length;
+
+	  if ($id=~/$seqID/){
+		print "$id\t$start\t$end\n";
+	  }
 	}
   }
+} else {
+
+  my ($id,$start,$length);
+  my ($currName,$currStart,$currEnd,$currStrand);
+  my ($prevName,$prevStart,$prevEnd);
+  my $minStart=99000000;
+  my $maxEnd=0;
+  $prevStart=0; $prevEnd=0; $prevName='';
+
+  while (my $line=<>){
+
+	chomp($line);
+
+	if ($line=~/^s\s+(.+?)\s+(\d+)\s+(\d+).*/){
+
+	  ($id,$start,$length)=($1,$2,$3);
+
+	  # Use first ID in first alignment as reference if no --seq-id is
+	  # given
+	  if (not $seqID){
+		if ($id=~/(.*)\..*/){
+		  $seqID=$1;
+		} else {
+		  $seqID=$id;
+		}
+	  }
+
+	  next if !($id=~/$seqID/);
+
+	  $currName=$id;
+	  $currStart=$start;
+	  $currEnd=$start+$length;
+
+	} else {
+
+	  next;
+
+	}
+
+	if (!(($currName eq $prevName) and ($currStart <= $prevEnd))){
+
+	  if ($maxEnd!=0){
+		
+		print "$id\t$minStart\t$maxEnd\n";
+		
+		$minStart=999000000;
+		$maxEnd=0;
+
+	  }
+	}
+	$minStart=$currStart if ($currStart<$minStart);
+	$maxEnd=$currEnd if ($currEnd>$maxEnd);
+	
+	($prevName,$prevStart,$prevEnd)=($currName,$currStart,$currEnd);
+  }
 }
+	
 
 __END__
 
@@ -73,7 +144,14 @@ multiple sequence alignment to a BED style annotation format.
 Specify the sequence identifier of the sequence which should be used
 as a reference to create the output. Use for example C<hg17> if you
 want to get all sequences containing C<hg17> in the idenitfier
-(e.g. C<hg17.chr10>, C<hg17.chr22>,...). This option is mandatory.
+(e.g. C<hg17.chr10>, C<hg17.chr22>,...). If this option is omitted,
+the first sequence identifier of the first sequence in the first
+alignment block is used.
+
+=item B<-c, --cluster>
+
+Combine overlapping alignments and report non-overlapping
+regions in the BED output. 
 
 =item B<-v, --version>
 
