@@ -15,7 +15,7 @@
 #include "fold_vars.h"
 #include "PS_dot.h"
 
-static char UNUSED rcsid[] = "$Id: PS_dot.c,v 1.2 2007-07-22 20:58:48 wash Exp $";
+static char UNUSED rcsid[] = "$Id: PS_dot.c,v 1.3 2008-01-24 10:29:17 wash Exp $";
 
 #define PUBLIC
 #define  PRIVATE   static
