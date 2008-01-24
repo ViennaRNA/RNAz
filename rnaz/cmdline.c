@@ -46,6 +46,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->cutoff_given = 0 ;
   args_info->show_gaps_given = 0 ;
   args_info->predict_strand_given = 0 ;
+  args_info->plot_given = 0 ;
 }
 
 static
@@ -61,6 +62,7 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->cutoff_orig = NULL;
   args_info->show_gaps_flag = 0;
   args_info->predict_strand_flag = 0;
+  args_info->plot_flag = 0;
   
 }
 
@@ -85,6 +87,7 @@ cmdline_parser_print_help (void)
   printf("%s\n","  -p, --cutoff=FLOAT    Probability cutoff");
   printf("%s\n","  -g, --show-gaps       Display alignment with gap  (default=off)");
   printf("%s\n","  -s, --predict-strand  Use strand predictor  (default=off)");
+  printf("%s\n","  -x, --plot            Generate graphical output  (default=off)");
   
 }
 
@@ -194,6 +197,9 @@ cmdline_parser_file_save(const char *filename, struct gengetopt_args_info *args_
   if (args_info->predict_strand_given) {
     fprintf(outfile, "%s\n", "predict-strand");
   }
+  if (args_info->plot_given) {
+    fprintf(outfile, "%s\n", "plot");
+  }
   
   fclose (outfile);
 
@@ -280,11 +286,12 @@ cmdline_parser_internal (int argc, char * const *argv, struct gengetopt_args_inf
         { "cutoff",	1, NULL, 'p' },
         { "show-gaps",	0, NULL, 'g' },
         { "predict-strand",	0, NULL, 's' },
+        { "plot",	0, NULL, 'x' },
         { NULL,	0, NULL, 0 }
       };
 
       stop_char = 0;
-      c = getopt_long (argc, argv, "hVfrbo:w:p:gs", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVfrbo:w:p:gsx", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -435,6 +442,19 @@ cmdline_parser_internal (int argc, char * const *argv, struct gengetopt_args_inf
           local_args_info.predict_strand_given = 1;
           args_info->predict_strand_given = 1;
           args_info->predict_strand_flag = !(args_info->predict_strand_flag);
+          break;
+
+        case 'x':	/* Generate graphical output.  */
+          if (local_args_info.plot_given)
+            {
+              fprintf (stderr, "%s: `--plot' (`-x') option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
+              goto failure;
+            }
+          if (args_info->plot_given && ! override)
+            continue;
+          local_args_info.plot_given = 1;
+          args_info->plot_given = 1;
+          args_info->plot_flag = !(args_info->plot_flag);
           break;
 
 

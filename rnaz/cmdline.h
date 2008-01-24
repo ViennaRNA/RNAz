@@ -35,6 +35,7 @@ struct gengetopt_args_info
   char * cutoff_orig;	/* Probability cutoff original value given at command line.  */
   int show_gaps_flag;	/* Display alignment with gap (default=off).  */
   int predict_strand_flag;	/* Use strand predictor (default=off).  */
+  int plot_flag;	/* Generate graphical output (default=off).  */
   
   int help_given ;	/* Whether help was given.  */
   int version_given ;	/* Whether version was given.  */
@@ -46,6 +47,7 @@ struct gengetopt_args_info
   int cutoff_given ;	/* Whether cutoff was given.  */
   int show_gaps_given ;	/* Whether show-gaps was given.  */
   int predict_strand_given ;	/* Whether predict-strand was given.  */
+  int plot_given ;	/* Whether plot was given.  */
 
   char **inputs ; /* unamed options */
   unsigned inputs_num ; /* unamed options number */
