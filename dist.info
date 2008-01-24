@@ -14,11 +14,21 @@
 
 7. Update README, NEWS, TODO
 
-8. Create a tag in CVS:  cvs tag -R rel-1-0
+9. Run  cvs2cl.pl which creates the ChanceLog file automatically.
 
-9. make dist
+10. Create a tag in CVS:  cvs tag -R rel-1-0
+
+11. make dist
+
+12. Copy tarball to win-RNAz dir and untar it. Cross compile it using 
+    ../cross-configure.sh and ../cross-make.sh
+
+13. Under Windows: Open "Advanced Installer Package" RNAz.aip and add updated
+    files. Make the MSI installer package.
+
+14. Update Website. If documentation has changed don't forget HTML documentation.    
 
 --
-$Id: dist.info,v 1.3 2006-10-12 17:05:28 wash Exp $
+$Id: dist.info,v 1.4 2008-01-24 10:53:10 wash Exp $
 
 

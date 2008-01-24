@@ -1,3 +1,170 @@
+2008-01-24 11:47  wash
+
+	* configure.ac: [no log message]
+
+2008-01-24 11:30  wash
+
+	* examples/IRE.aln: Changed to short names, as this example is used
+	  in a book chapter.
+
+2008-01-24 11:29  wash
+
+	* librna/PS_dot.c: Added PS_dot.c for postscript output
+
+2008-01-24 11:27  wash
+
+	* models/: strand.inc, strand.model: New version of RNAstrand.
+
+2008-01-24 11:26  wash
+
+	* perl/: RNAz.pm, rnazBEDstats.pl, rnazCluster.pl, rnazFilter.pl,
+	  rnazIndex.pl, rnazMAF2BED.pl: Several bug-fixes/improvements.
+
+2008-01-24 11:21  wash
+
+	* rnaz/cmdline.ggo: Added new options
+
+2008-01-24 11:20  wash
+
+	* rnaz/: cmdline.c, cmdline.h: Added new options.
+
+2008-01-24 11:20  wash
+
+	* rnaz/: strand.c, strand.h: New version of RNAstrand
+
+2008-01-24 11:19  wash
+
+	* rnaz/RNAz.c: Added ploting functions and new version of RNAstrand
+
+2008-01-24 11:18  wash
+
+	* rnaz/: rnaz_utils.c, rnaz_utils.h: Changed some names (forgot
+	  why, probably to avoid clashes with RNAstrand and to be more
+	  consistent)
+
+2007-07-22 22:58  wash
+
+	* librna/: Makefile.am, PS_dot.c, PS_dot.h, alicircfold.inc,
+	  alifold.c, alifold.h, aln_util.c, aln_util.h, circfold.inc,
+	  energy_par.c, energy_par.h, fold.c, fold.h, fold_vars.c,
+	  fold_vars.h, naview.c, pair_mat.h, params.c, params.h,
+	  read_epars.c, utils.c: Added latest Vienna RNA files with new
+	  graphic functions.
+
+2007-04-19 12:40  wash
+
+	* perl/RNAz.pm: Changed lots of things over time. Note changes in
+	  ClustalW parse function. This version should work...
+
+2007-04-19 12:40  wash
+
+	* perl/rnazWindow.pl: Changed lots of things over time. This
+	  version should work...
+
+2006-12-11 15:27  wash
+
+	* librna/: PS_dot.c, PS_dot.h: Added PS_dot.[ch] for doing PS
+	  output
+
+2006-12-07 10:45  wash
+
+	* perl/rnazWindow.pl: Made slicing more efficient by counting
+	  positions more efficiently
+
+2006-10-12 19:05  wash
+
+	* dist.info: [no log message]
+
+2006-10-12 18:58  wash
+
+	* rnaz/RNAz.c: [no log message]
+
+2006-10-12 18:40  wash
+
+	* NEWS, README, TODO: [no log message]
+
+2006-10-12 15:26  wash
+
+	* perl/rnazWindow.pl: Changed some options from integer to float
+	  which is more correct.
+
+2006-10-12 15:22  wash
+
+	* perl/rnazCluster.pl: Fixed 2 bugs: Display version correctly in
+	  html files. Add missing quotations in "system" call.
+
+2006-10-12 15:19  wash
+
+	* rnaz/zscore.c: Fixed division by zero problems which can occur on
+	  some pathological alignments.
+
+2006-10-12 15:17  wash
+
+	* rnaz/rnaz_utils.c: Fixed some bugs: Seg-fault on alignments
+	  starting with blank line;division by zero error for some
+	  pathological alignments
+
+2006-10-12 15:15  wash
+
+	* rnaz/RNAz.c: Fixed some bugs (error if only one sequence in
+	  alignment, avoid some divison by zero errors which can occur in
+	  some pathological alignments)
+
+2006-08-18 12:43  wash
+
+	* man/RNAz.pod: Corrected documentation of -s flag.
+
+2006-07-31 15:34  wash
+
+	* rnaz/svm_helper.c: Included missing '#include "utils.h"' which
+	  caused seg-fault on 64bit machines
+
+2006-03-26 14:52  wash
+
+	* NEWS, README, configure.ac, dist.info: Final changes for version
+	  1.0pre
+
+2006-03-26 14:46  wash
+
+	* doc/makedoc.pl: [no log message]
+
+2006-03-26 14:28  wash
+
+	* doc/makedoc.pl: Added stylesheets for the html manual pages.
+
+2006-03-26 13:56  wash
+
+	* perl/RNAz.pm, rnaz/RNAz.c: [no log message]
+
+2006-03-24 18:56  wash
+
+	* doc/manual.tex: [no log message]
+
+2006-03-24 16:47  wash
+
+	* doc/: custom.bst, makedoc.pl, manual.bib, manual.tex,
+	  figs/flowchart.eps, figs/formats.eps: Added latex manual and perl
+	  script to generate latex and html manuals from PODs
+
+2006-03-24 16:43  wash
+
+	* perl/RNAz.pm, perl/rnazAnnotate.pl, perl/rnazBEDsort.pl,
+	  perl/rnazBEDstats.pl, perl/rnazBlast.pl, perl/rnazCluster.pl,
+	  perl/rnazFilter.pl, perl/rnazIndex.pl, perl/rnazMAF2BED.pl,
+	  perl/rnazRandomizeAln.pl, perl/rnazSelectSeqs.pl,
+	  perl/rnazSort.pl, perl/rnazWindow.pl, rnaz/rnaz_utils.c,
+	  rnaz/zscore.c: Added POD documentation to perl programs
+
+2006-03-24 16:42  wash
+
+	* man/RNAz.pod: [no log message]
+
+2006-03-24 16:41  wash
+
+	* AUTHORS, ChangeLog, INSTALL, Makefile.am, NEWS, README, TODO,
+	  configure.ac, dist.info: Adding dist.info with a checklist for
+	  creating new versions.
+
 2006-03-23 17:09  wash
 
 	* man/RNAz.pod: Use POD template for the man page

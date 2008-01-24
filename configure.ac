@@ -1,4 +1,4 @@
-AC_INIT(RNAz, 1.0pre, wash@tbi.univie.ac.at, RNAz)
+AC_INIT(RNAz, 1.0, wash@tbi.univie.ac.at, RNAz)
 AM_INIT_AUTOMAKE
 
 AC_PROG_CC
