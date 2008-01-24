@@ -7,7 +7,7 @@
  *                                                                   *
  *	                    Stefan Washietl                              *
  *                                                                   *
- *	   $Id: rnaz_utils.c,v 1.3 2006-10-12 13:17:42 wash Exp $              *
+ *	   $Id: rnaz_utils.c,v 1.4 2008-01-24 10:18:20 wash Exp $              *
  *                                                                   *
  *********************************************************************/
 
@@ -32,7 +32,7 @@
 
 /********************************************************************
  *                                                                  *
- * read_clustal -- read CLUSTAL W formatted file                    *
+ * readClustal -- read CLUSTAL W formatted file                    *
  *                                                                  *
  ********************************************************************
  *                                                                  *
@@ -44,7 +44,7 @@
  *                                                                  *
  ********************************************************************/
 
-int read_clustal(FILE *clust, struct aln *alignedSeqs[]) {
+int readClustal(FILE *clust, struct aln *alignedSeqs[]) {
 
   char *line, name[100]={'\0'}, *seq;
   int  n, nn=0, num_seq = 0;
@@ -119,7 +119,7 @@ int read_clustal(FILE *clust, struct aln *alignedSeqs[]) {
 
 /********************************************************************
  *                                                                  *
- * read_maf -- read MAF formatted file                              *
+ * readMaf -- read MAF formatted file                              *
  *                                                                  *
  ********************************************************************
  *                                                                  *
@@ -132,7 +132,7 @@ int read_clustal(FILE *clust, struct aln *alignedSeqs[]) {
  ********************************************************************/
 
 
-int read_maf(FILE *clust, struct aln *alignedSeqs[]) {
+int readMaf(FILE *clust, struct aln *alignedSeqs[]) {
 
   char *line;
   int num_seq = 0;
@@ -231,7 +231,7 @@ int read_maf(FILE *clust, struct aln *alignedSeqs[]) {
 
 /********************************************************************
  *                                                                  *
- * consensus -- Calculates consensus of alignment                   *
+ * consensusSeq -- Calculates consensus of alignment                *
  *                                                                  *
  ********************************************************************
  *                                                                  *
@@ -241,7 +241,7 @@ int read_maf(FILE *clust, struct aln *alignedSeqs[]) {
  *                                                                  *
  ********************************************************************/
 
- char *consensus(const struct aln *AS[]) {
+ char *consensusSeq(const struct aln *AS[]) {
   char *string;
   int i,n;
   n = strlen(AS[0]->seq);
