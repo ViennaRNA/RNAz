@@ -1,6 +1,6 @@
 #!/usr/local/bin/perl -w
 
-# $Id: rnazBEDsort.pl,v 1.2 2006-03-24 15:43:13 wash Exp $
+# $Id: rnazBEDsort.pl,v 1.2 2006/03/24 15:43:13 wash Exp $
 
 #missing: re-introduce track line, more intelligent sort of seq-ids (chr9 before chr10)
 

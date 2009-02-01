@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: rnazBlast.pl,v 1.2 2006-03-24 15:43:13 wash Exp $
+# $Id: rnazBlast.pl,v 1.2 2006/03/24 15:43:13 wash Exp $
 
 use strict;
 use FindBin;

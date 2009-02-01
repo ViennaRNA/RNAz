@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: rnazSelectSeqs.pl,v 1.3 2006-03-24 15:43:14 wash Exp $
+# $Id: rnazSelectSeqs.pl,v 1.3 2006/03/24 15:43:14 wash Exp $
 
 use strict;
 use FindBin;

@@ -7,7 +7,7 @@
  *                                                                   *
  *	          c Stefan Washietl, Ivo L Hofacker                  *
  *                                                                   *
- *	   $Id: svm_helper.c,v 1.5 2006-07-31 13:34:08 wash Exp $    *
+ *	   $Id: svm_helper.c,v 1.5 2006/07/31 13:34:08 wash Exp $    *
  *                                                                   *
  *********************************************************************/
 

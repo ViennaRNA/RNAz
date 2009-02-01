@@ -47,7 +47,6 @@ PRIVATE char **annote(const char *structure, const char *AS[]);
 PRIVATE void warning(char* string, double id,int n_seq, double z,double sci,
 					 struct aln *AS[]);
 
-
 enum {FORWARD=1, REVERSE=2};
 
 /********************************************************************
@@ -129,41 +128,40 @@ int main(int argc, char *argv[])
 
   /* Strand prediction implies both strands scored */
   if (args.predict_strand_flag){
-	args.both_strands_flag=1;
+    args.both_strands_flag=1;
   }
   
   
   if (args.forward_flag && !args.reverse_flag){
-	directions[0]=FORWARD;
-	directions[1]=directions[2]=0;
+    directions[0]=FORWARD;
+    directions[1]=directions[2]=0;
   }
   if (!args.forward_flag && args.reverse_flag){
-	directions[0]=REVERSE;
-	directions[1]=directions[2]=0;
+    directions[0]=REVERSE;
+    directions[1]=directions[2]=0;
   }
   if ((args.forward_flag && args.reverse_flag) || args.both_strands_flag){
-	directions[0]=FORWARD;
-	directions[1]=REVERSE;
+    directions[0]=FORWARD;
+    directions[1]=REVERSE;
   }
 
   if (args.window_given){
-	if (sscanf(args.window_arg,"%d-%d",&from,&to)!=2){
-	  nrerror("ERROR: Invalid --window/-w command. "
-			  "Use it like '--window 100-200'\n");
-	}
-	
-	printf("from:%d,to:%d\n",from,to);
+    if (sscanf(args.window_arg,"%d-%d",&from,&to)!=2){
+      nrerror("ERROR: Invalid --window/-w command. "
+              "Use it like '--window 100-200'\n");
+    }
+    
+    printf("from:%d,to:%d\n",from,to);
   }
 
   
   if (args.inputs_num>=1){
-	clust_file = fopen(args.inputs[0], "r"); 
-	if (clust_file == NULL){
-	  fprintf(stderr, "ERROR: Can't open input file %s\n", args.inputs[0]);
-	  exit(1);
-	}
+    clust_file = fopen(args.inputs[0], "r"); 
+    if (clust_file == NULL){
+      fprintf(stderr, "ERROR: Can't open input file %s\n", args.inputs[0]);
+      exit(1);
+    }
   }
-
 
  
   /* Global RNA package variables */
@@ -173,13 +171,13 @@ int main(int argc, char *argv[])
   switch(checkFormat(clust_file)){
 
   case CLUSTAL:
-	readFunction=&readClustal;
-	break;
+    readFunction=&readClustal;
+    break;
   case MAF:
-	readFunction=&readMaf;
-	break;
+    readFunction=&readMaf;
+    break;
   case 0:
-	nrerror("ERROR: Unknown alignment file format. Use Clustal W or MAF format.\n");
+    nrerror("ERROR: Unknown alignment file format. Use Clustal W or MAF format.\n");
   }
 
   decision_model=get_decision_model(NULL);
@@ -189,279 +187,274 @@ int main(int argc, char *argv[])
 
   while ((n_seq=readFunction(clust_file, AS))!=0){
 
-	if (n_seq ==1){
-	  nrerror("ERROR: You need at least two sequences in the alignment.\n");
-	}
+    if (n_seq ==1){
+      nrerror("ERROR: You need at least two sequences in the alignment.\n");
+    }
 	
-	countAln++;
+    countAln++;
 	
-	length = (int) strlen(AS[0]->seq);
+    length = (int) strlen(AS[0]->seq);
 	
-	/* if a slice is specified by the user */
+    /* if a slice is specified by the user */
   
-	if ((from!=-1 || to!=-1) && (countAln==1)){
+    if ((from!=-1 || to!=-1) && (countAln==1)){
 	  
-	  if ((from>=to)||(from<=0)||(to>length)){
-		nrerror("ERROR: Invalid window range given.\n");
-	  }
+      if ((from>=to)||(from<=0)||(to>length)){
+        nrerror("ERROR: Invalid window range given.\n");
+      }
 	  
-	  sliceAln((const struct aln**)AS, (struct aln **)window, from, to);
-	  length=to-from+1;
-	} else { /* take complete alignment */
-	  /* window=AS does not work..., deep copy seems not necessary here*/
-	  from=1;
-	  to=length;
-	  sliceAln((const struct aln **)AS, (struct aln **)window, 1, length);
-	}
+      sliceAln((const struct aln**)AS, (struct aln **)window, from, to);
+      length=to-from+1;
+    } else { /* take complete alignment */
+      /* window=AS does not work..., deep copy seems not necessary here*/
+      from=1;
+      to=length;
+      sliceAln((const struct aln **)AS, (struct aln **)window, 1, length);
+    }
 
-	 /* Convert all Us to Ts for RNAalifold. There is a slight
-		 difference in the results. During training we used alignments
-		 with Ts, so we use Ts here as well. */
-
-	for (i=0;i<n_seq;i++){
-	  j=0;
-	  while (window[i]->seq[j]){
-		window[i]->seq[j]=toupper(window[i]->seq[j]);
-		if (window[i]->seq[j]=='U') window[i]->seq[j]='T';
-		++j;
-	  }
-	}
+    /* Convert all Us to Ts for RNAalifold. There is a slight
+       difference in the results. During training we used alignments
+       with Ts, so we use Ts here as well. */
+    
+    for (i=0;i<n_seq;i++){
+      j=0;
+      while (window[i]->seq[j]){
+        window[i]->seq[j]=toupper(window[i]->seq[j]);
+        if (window[i]->seq[j]=='U') window[i]->seq[j]='T';
+        ++j;
+      }
+    }
 	
-	k=0;
-	while ((currDirection=directions[k++])!=0){
+    k=0;
+    while ((currDirection=directions[k++])!=0){
 	  
-	  if (currDirection==REVERSE){
-		revAln((struct aln **)window);
-		strcpy(strandString,"reverse");
-	  } else {
-		strcpy(strandString,"forward");
-	  }
+      if (currDirection==REVERSE){
+        revAln((struct aln **)window);
+        strcpy(strandString,"reverse");
+      } else {
+        strcpy(strandString,"forward");
+      }
 
-	  structure = (char *) space((unsigned) length+1);
+      structure = (char *) space((unsigned) length+1);
 
-	  for (i=0;window[i]!=NULL;i++){
-		tmpAln[i]=window[i]->seq;
-	  }
-	  tmpAln[i]=NULL;
+      for (i=0;window[i]!=NULL;i++){
+        tmpAln[i]=window[i]->seq;
+      }
+      tmpAln[i]=NULL;
+      
+      min_en = alifold(tmpAln, structure);
+      
+      comb=combPerPair(window,structure);
+      
+      sumZ=0;
+      sumMFE=0;
 
-	  min_en = alifold(tmpAln, structure);
-
-	  comb=combPerPair(window,structure);
-	  
-	  sumZ=0;
-	  sumMFE=0;
-
-	  output=(char *)space(sizeof(char)*(length+16)*(n_seq+1)*3);
+      output=(char *)space(sizeof(char)*(length+16)*(n_seq+1)*3);
   
-	  for (i=0;i<n_seq;i++){
-		singleStruc = space(strlen(window[i]->seq)+1);
-		woGapsSeq = space(strlen(window[i]->seq)+1);
-		j=0;
-		while (window[i]->seq[j]){
-		  /* Convert all Ts to Us for RNAfold. There is a difference
-			 between the results. With U in the function call, we get
-			 the results as RNAfold gives on the command line. Since
-			 this variant was also used during training, we use it here
-			 as well. */
-		  if (window[i]->seq[j]=='T') window[i]->seq[j]='U';
-		  if (window[i]->seq[j]!='-'){
-			woGapsSeq[strlen(woGapsSeq)]=window[i]->seq[j];
-			woGapsSeq[strlen(woGapsSeq)]='\0';
-		  }
-		  ++j;
-		}
+      for (i=0;i<n_seq;i++){
+        singleStruc = space(strlen(window[i]->seq)+1);
+        woGapsSeq = space(strlen(window[i]->seq)+1);
+        j=0;
+        while (window[i]->seq[j]){
+          /* Convert all Ts to Us for RNAfold. There is a difference
+             between the results. With U in the function call, we get
+             the results as RNAfold gives on the command line. Since
+             this variant was also used during training, we use it here
+             as well. */
+          if (window[i]->seq[j]=='T') window[i]->seq[j]='U';
+          if (window[i]->seq[j]!='-'){
+            woGapsSeq[strlen(woGapsSeq)]=window[i]->seq[j];
+            woGapsSeq[strlen(woGapsSeq)]='\0';
+          }
+          ++j;
+        }
 	  
-		singleMFE = fold(woGapsSeq, singleStruc);
-		singleZ=mfe_zscore(woGapsSeq,singleMFE);
-	  
-		sumZ+=singleZ;
-		sumMFE+=singleMFE;
+        singleMFE = fold(woGapsSeq, singleStruc);
+        singleZ=mfe_zscore(woGapsSeq,singleMFE);
+        
+        sumZ+=singleZ;
+        sumMFE+=singleMFE;
 
-		if (window[1]->strand!='?' && !args.window_given){
-		  sprintf(output+strlen(output),
-				  ">%s %d %d %c %d\n",
-				  window[i]->name,window[i]->start,
-				  window[i]->length,window[i]->strand,
-				  window[i]->fullLength);
-		} else {
-		  sprintf(output+strlen(output),">%s\n",window[i]->name);
-		}
+        if (window[1]->strand!='?' && !args.window_given){
+          sprintf(output+strlen(output),
+                  ">%s %d %d %c %d\n",
+                  window[i]->name,window[i]->start,
+                  window[i]->length,window[i]->strand,
+                  window[i]->fullLength);
+        } else {
+          sprintf(output+strlen(output),">%s\n",window[i]->name);
+        }
 
-		if (args.show_gaps_flag){
+        if (args.show_gaps_flag){
 
-		  gapStruc= (char *) space(sizeof(char)*(strlen(window[i]->seq)+1));
+          gapStruc= (char *) space(sizeof(char)*(strlen(window[i]->seq)+1));
+          
+          l=ll=0;
 
-		  l=ll=0;
-
-		  while (window[i]->seq[l]!='\0'){
-			if (window[i]->seq[l]!='-'){
-			  gapStruc[l]=singleStruc[ll];
-			  l++;
-			  ll++;
-			} else {
-			  gapStruc[l]='-';
-			  l++;
-			}
-		  }
+          while (window[i]->seq[l]!='\0'){
+            if (window[i]->seq[l]!='-'){
+              gapStruc[l]=singleStruc[ll];
+              l++;
+              ll++;
+            } else {
+              gapStruc[l]='-';
+              l++;
+            }
+          }
 		  		  
-		  sprintf(output+strlen(output),"%s\n%s ( %6.2f)\n",
-				  window[i]->seq,gapStruc,singleMFE);
+          sprintf(output+strlen(output),"%s\n%s ( %6.2f)\n",
+                  window[i]->seq,gapStruc,singleMFE);
 		  
 		  
-		} else {
-		  sprintf(output+strlen(output),"%s\n%s ( %6.2f)\n",
-				  woGapsSeq,singleStruc,singleMFE);
-		}
-		free(woGapsSeq);
-		free(singleStruc);
-	  }
+        } else {
+          sprintf(output+strlen(output),"%s\n%s ( %6.2f)\n",
+                  woGapsSeq,singleStruc,singleMFE);
+        }
+        free(woGapsSeq);
+        free(singleStruc);
+      }
 
-	  {
-		int i; double s=0;
-		extern int eos_debug;
-		eos_debug=-1; /* shut off warnings about nonstandard pairs */
-		for (i=0; window[i]!=NULL; i++) 
-		  s += energy_of_struct(window[i]->seq, structure);
-		real_en = s/i;
-	  }
+      {
+        int i; double s=0;
+        extern int eos_debug;
+        eos_debug=-1; /* shut off warnings about nonstandard pairs */
+        for (i=0; window[i]!=NULL; i++) 
+          s += energy_of_struct(window[i]->seq, structure);
+        real_en = s/i;
+      }
 
-	  string = consensusSeq((const struct aln**) window);
-	  sprintf(output+strlen(output),
-			  ">consensus\n%s\n%s (%6.2f = %6.2f + %6.2f) \n",
-			  string, structure, min_en, real_en, min_en-real_en );
+      string = consensusSeq((const struct aln**) window);
+      sprintf(output+strlen(output),
+              ">consensus\n%s\n%s (%6.2f = %6.2f + %6.2f) \n",
+              string, structure, min_en, real_en, min_en-real_en );
 
-	  id=meanPairID((const struct aln**)window);
-	  z=sumZ/n_seq;
+      id=meanPairID((const struct aln**)window);
+      z=sumZ/n_seq;
 
-	  if (sumMFE==0){ 
-		/*Set SCI to 0 in the weird case of no structure in single
-		  sequences*/
-		sci=0;
-	  } else {
-		sci=min_en/(sumMFE/n_seq);
-	  }
+      if (sumMFE==0){ 
+        /*Set SCI to 0 in the weird case of no structure in single
+          sequences*/
+        sci=0;
+      } else {
+        sci=min_en/(sumMFE/n_seq);
+      }
 
 	  
-	  	  
-	  decValue=999;
-	  prob=0;
+      
+      decValue=999;
+      prob=0;
 	
-	  classify(&prob,&decValue,decision_model,id,n_seq,z,sci);
+      classify(&prob,&decValue,decision_model,id,n_seq,z,sci);
 
-	  if (args.cutoff_given){
-		if (prob<args.cutoff_arg){
-		  continue;
-		}
-	  }
+      if (args.cutoff_given){
+        if (prob<args.cutoff_arg){
+          continue;
+        }
+      }
 
 	  
-	  strcpy(warningString,"");
+      strcpy(warningString,"");
 
-	  warning(warningString,id,n_seq,z,sci,(struct aln **)window);
+      warning(warningString,id,n_seq,z,sci,(struct aln **)window);
 	  
 
-	  fprintf(out,"\n############################  RNAz "PACKAGE_VERSION"  ##############################\n\n");
-	  fprintf(out," Sequences: %u\n", n_seq);
+      fprintf(out,"\n############################  RNAz "PACKAGE_VERSION"  ##############################\n\n");
+      fprintf(out," Sequences: %u\n", n_seq);
 
-	  if (args.window_given){
-		fprintf(out," Slice: %u to %u\n",from,to);
+      if (args.window_given){
+        fprintf(out," Slice: %u to %u\n",from,to);
 	  }
-	  fprintf(out," Columns: %u\n",length);
-	  fprintf(out," Reading direction: %s\n",strandString);
-	  fprintf(out," Mean pairwise identity: %6.2f\n", id);
-	  fprintf(out," Mean single sequence MFE: %6.2f\n", sumMFE/n_seq);
-	  fprintf(out," Consensus MFE: %6.2f\n",min_en);
-	  fprintf(out," Energy contribution: %6.2f\n",real_en);
-	  fprintf(out," Covariance contribution: %6.2f\n",min_en-real_en);
-	  fprintf(out," Combinations/Pair: %6.2f\n",comb);
-	  fprintf(out," Mean z-score: %6.2f\n",z);
-	  fprintf(out," Structure conservation index: %6.2f\n",sci);
-	  fprintf(out," SVM decision value: %6.2f\n",decValue);
-	  fprintf(out," SVM RNA-class probability: %6f\n",prob);
-	  if (prob>0.5){
-		fprintf(out," Prediction: RNA\n");
-	  }
-	  else {
-		fprintf(out," Prediction: OTHER\n");
-	  }
-	  fprintf(out,"%s",warningString);
+      fprintf(out," Columns: %u\n",length);
+      fprintf(out," Reading direction: %s\n",strandString);
+      fprintf(out," Mean pairwise identity: %6.2f\n", id);
+      fprintf(out," Mean single sequence MFE: %6.2f\n", sumMFE/n_seq);
+      fprintf(out," Consensus MFE: %6.2f\n",min_en);
+      fprintf(out," Energy contribution: %6.2f\n",real_en);
+      fprintf(out," Covariance contribution: %6.2f\n",min_en-real_en);
+      fprintf(out," Combinations/Pair: %6.2f\n",comb);
+      fprintf(out," Mean z-score: %6.2f\n",z);
+      fprintf(out," Structure conservation index: %6.2f\n",sci);
+      fprintf(out," SVM decision value: %6.2f\n",decValue);
+      fprintf(out," SVM RNA-class probability: %6f\n",prob);
+      if (prob>0.5){
+        fprintf(out," Prediction: RNA\n");
+      }
+      else {
+        fprintf(out," Prediction: OTHER\n");
+      }
+      fprintf(out,"%s",warningString);
 	  
-	  fprintf(out,"\n######################################################################\n\n");
+      fprintf(out,"\n######################################################################\n\n");
 	
-	  fprintf(out,"%s",output);
+      fprintf(out,"%s",output);
 	
-	  fflush(out);
+      fflush(out);
 
-	  if (args.plot_given){
-		if (countAln==1){
-		  strcpy(gfxName,".ps");
-		} else {
-		  sprintf(gfxName,"%i.ps",countAln-1);
-		}
-		gfxPlot(gfxName, structure, string, window, n_seq);
-	  }
+      if (args.plot_given){
+        if (countAln==1){
+          strcpy(gfxName,".ps");
+        } else {
+          sprintf(gfxName,"%i.ps",countAln-1);
+        }
+        gfxPlot(gfxName, structure, string, window, n_seq);
+      }
  
 
-	  
-	 
+      if (currDirection==FORWARD && args.predict_strand_flag){
 
-	  
-
-	  if (currDirection==FORWARD && args.predict_strand_flag){
-
-      sliceAln((const struct aln**)window, (struct aln **)windowFwdMem, 1, length);
-
-      meanMFE_fwd=sumMFE/n_seq;
-      consensusMFE_fwd=min_en;
-      sci_fwd=sci;
-      z_fwd=z;
+        sliceAln((const struct aln**)window, (struct aln **)windowFwdMem, 1, length);
+        
+        meanMFE_fwd=sumMFE/n_seq;
+        consensusMFE_fwd=min_en;
+        sci_fwd=sci;
+        z_fwd=z;
       
-      string = (char*)consensusSeq((const struct aln**) window);
-      gu_fwd=(double)frequency_gu_pairs(string, structure);
+        string = (char*)consensusSeq((const struct aln**) window);
+        gu_fwd=(double)frequency_gu_pairs(string, structure);
       
-	  }
+      }
 
-	  if (currDirection==REVERSE && args.predict_strand_flag){
+      if (currDirection==REVERSE && args.predict_strand_flag){
 
-      string = (char*)consensusSeq((const struct aln**) window);
-      gu=(double)frequency_gu_pairs(string, structure);
-
-
-      // strand(double deltaSCI, double deltaMeanMFE, double deltaConsMFE, double deltaZ, int n_seq, double id, double consFreqGU, 
-      //            double *score, double *prob, double *decValue, char *modelDir, int code)
-
-      printf("inhere\n");
-
-      if (strand(sci_fwd-sci, meanMFE_fwd-(sumMFE/n_seq), 
-                 consensusMFE_fwd-min_en, z_fwd-z, n_seq, id, gu_fwd+gu,
-                 &strandScore, &strandProb, &strandDec, NULL,CODE_SCI_Z_MEANMFE_CONSMFE)){
+        string = (char*)consensusSeq((const struct aln**) window);
+        gu=(double)frequency_gu_pairs(string, structure);
 
 
-      /* if (predict_strand(sci_fwd-sci, meanMFE_fwd-(sumMFE/n_seq), */
-/*                          consensusMFE_fwd-min_en, z_fwd-z, n_seq, id,  */
-/*                          &strandGuess, &strandProb, &strandDec, NULL)){ */
+        // strand(double deltaSCI, double deltaMeanMFE, double deltaConsMFE, double deltaZ, int n_seq, double id, double consFreqGU, 
+        //            double *score, double *prob, double *decValue, char *modelDir, int code)
+
+        printf("inhere\n");
+
+        if (strand(sci_fwd-sci, meanMFE_fwd-(sumMFE/n_seq), 
+                   consensusMFE_fwd-min_en, z_fwd-z, n_seq, id, gu_fwd+gu,
+                   &strandScore, &strandProb, &strandDec, NULL,CODE_SCI_Z_MEANMFE_CONSMFE)){
+
+
+          /* if (predict_strand(sci_fwd-sci, meanMFE_fwd-(sumMFE/n_seq), */
+          /*                          consensusMFE_fwd-min_en, z_fwd-z, n_seq, id,  */
+          /*                          &strandGuess, &strandProb, &strandDec, NULL)){ */
 
        
-        if (strandScore>1){
-          fprintf(out, "\n# Strand winner: forward (%.6f)\n",strandDec);
+          if (strandScore>1){
+            fprintf(out, "\n# Strand winner: forward (%.6f)\n",strandDec);
+          } else {
+            fprintf(out, "\n# Strand winner: reverse (%.6f)\n",strandDec);
+          }
         } else {
-          fprintf(out, "\n# Strand winner: reverse (%.6f)\n",strandDec);
+          fprintf(out, "\n# WARNING: No strand prediction (values out of range)\n");
         }
-      } else {
-        fprintf(out, "\n# WARNING: No strand prediction (values out of range)\n");
       }
-	  }
 
-    free(structure);
-    free(output);
+      free(structure);
+      free(output);
 
-	}
-	freeAln((struct aln **)AS);
-	freeAln((struct aln **)window);
+    }
+    freeAln((struct aln **)AS);
+    freeAln((struct aln **)window);
   }
 
   if (countAln==0){
-	nrerror("ERROR: Empty alignment file\n");
+    nrerror("ERROR: Empty alignment file\n");
   }
   
   svm_destroy_model(decision_model);

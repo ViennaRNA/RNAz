@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: rnazAnnotate.pl,v 1.3 2006-03-24 15:43:13 wash Exp $
+# $Id: rnazAnnotate.pl,v 1.3 2006/03/24 15:43:13 wash Exp $
 
 use strict;
 use FindBin;
