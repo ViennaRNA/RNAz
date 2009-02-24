@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
-# $Id: rnazFilter.pl,v 1.3 2008-01-24 10:26:45 wash Exp $
+# -*-Perl-*-
+# Last changed Time-stamp: <2009-02-23 18:28:47 ivo>
 
 use strict;
 use FindBin;
@@ -30,19 +31,37 @@ if ($version){
   exit(0);
 }
 
-
-
-
-my @fieldsList=qw(hitID clusterID seqID start end strand N columns
-				  identity meanMFE consensusMFE energyTerm covarianceTerm combPerPair z SCI decValue P );
+# named column indices
+my %columnNames = (hitID          => 1,
+		   clusterID      => 2,
+		   seqID          => 3,
+		   start          => 4,
+		   end            => 5,
+		   strand         => 6,
+		   N              => 7,
+		   columns        => 8,
+		   identity       => 9,
+		   meanMFE        => 10,
+		   consensusMFE   => 11,
+		   energyTerm     => 12,
+		   covarianceTerm => 13,
+		   combPerPair    => 14,
+		   z              => 15,
+		   SCI            => 16,
+		   decValue       => 17,
+		   P              => 18);
 
 my %fields;
 
 my $filter=shift @ARGV;
 
-foreach my $field (@fieldsList){
-  $filter=~s/($field)/\$fields\{$1\}/g;
+foreach my $field (keys %columnNames){
+  $filter=~s/$field/COL$columnNames{$field}/g;
 }
+$filter =~ s/(COL\d+)/\$fields{$1}/g;
+
+# memorize column numbers
+my @columnIDs = ($filter=~ m/COL(\d+)/g);
 
 my $nCluster=0;
 my $nWindow=0;
@@ -59,7 +78,10 @@ foreach my $line (<>){
 	next;
   }
 
-  @fields{@fieldsList}=split(/\s+/,$line);
+  my @F = split(/\s+/,$line);
+  foreach my $id (@columnIDs) {
+      $fields{'COL'.$id} = $F[$id-1];
+  }
 
   local $SIG{__WARN__} =
 	sub {
@@ -221,6 +243,11 @@ Support vector machine decision value
 
 RNA class probability as calculated by the SVM
 
+=item 19. B<COL#>
+
+Specify a particular column by its index #. First column has index 1.
+e.g. C<COL18E<gt>0.9> is equivalent to C<PE<gt>0.9>
+
 =back
 
 =head1 OPERATORS
@@ -267,4 +294,3 @@ Counts all windows/loci with P>0.9.
 Stefan Washietl <wash@tbi.univie.ac.at>
 
 =cut
-

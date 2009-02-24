@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
-# $Id: rnazIndex.pl,v 1.3 2008-01-24 10:26:45 wash Exp $
+# -*-Perl-*-
+# Last changed Time-stamp: <2009-02-23 18:32:12 ivo>
 
 use strict;
 use FindBin;
@@ -8,6 +9,11 @@ use lib $FindBin::Bin;
 use RNAz;
 use Getopt::Long;
 use Pod::Usage;
+use vars qw/%COLS $COLIDX $COLNAME $COLDATA/;
+
+$COLIDX=-1;
+$COLNAME = '';
+$COLDATA = '';
 
 my $gff=0;
 my $bed=0;
@@ -24,26 +30,28 @@ my $forward=0;
 my $reverse=0;
 
 GetOptions('gff' => \$gff,
-		   'g' => \$gff,
-		   'bed' => \$bed,
-		   'fasta'=>\$fasta,
-		   'f'=>\$fasta,
-		   'b' => \$bed,
-		   'loci' => \$clusters,
-		   'forward'=>\$forward,
-		   'reverse'=>\$reverse,
-		   'l' => \$clusters,
-		   'windows' => \$hits,
-		   'w' => \$hits,
-		   'ucsc'=>\$ucsc,
-		   'html'=>\$html,
-		   'seq-dir:s' => \$seqDir,
-		   'version'=>\$version,
-		   'v'=>\$version,
-		   'help'=>\$help,
-		   'man'=>\$man,
-		   'h'=>\$help
-		  ) or pod2usage(1);
+	   'g' => \$gff,
+	   'bed' => \$bed,
+	   "col=s"     => sub { my ($colidx, $colname) = split(/:/, $_[1], 2);
+				$COLS{$colidx} = $colname },
+	   'fasta'     => \$fasta,
+	   'f'         => \$fasta,
+	   'b'         => \$bed,
+	   'loci'      => \$clusters,
+	   'forward'   => \$forward,
+	   'reverse'   => \$reverse,
+	   'l'         => \$clusters,
+	   'windows'   => \$hits,
+	   'w'         => \$hits,
+	   'ucsc'      => \$ucsc,
+	   'html'      => \$html,
+	   'seq-dir:s' => \$seqDir,
+	   'version'   => \$version,
+	   'v'         => \$version,
+	   'help'      => \$help,
+	   'man'       => \$man,
+	   'h'         => \$help
+	   ) or pod2usage(1);
 
 pod2usage(1) if $help;
 pod2usage(-verbose => 2) if $man;
@@ -53,7 +61,6 @@ if ($version){
   print "http://www.tbi.univie.ac.at/~wash/RNAz\n\n";
   exit(0);
 }
-
 
 ($clusters)=1 if (!$clusters and !$hits);
 $forward=1 if (!$forward and !$reverse);
@@ -75,29 +82,74 @@ if (($fasta) and (not -d $seqDir)){
 
 if ($html){
 
-print
-'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-  <head>
-    <title>Index</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-    <STYLE type="text/css">
-    TABLE {	border-spacing:1px;	background-color:#000000;}
-    TD {font-size:10pt;padding:7px;font-family:helvetica,arial,impact,sans-serif;text-align:center}
-    TH {font-size:10pt;background-color:#333399;color:#FFFFFF;padding:7px;font-family:helvetica,arial,impact,sans-serif;}
-    .darkcell { background-color:#d4d9ff;}
-    .lightcell { background-color:#e5e8ff;}
-    P {font-size:11pt;font-family:helvetica,arial,impact,sans-serif;}
-    H1 {font-size: 20pt;color:#333399;text-align: center;font-family: helvetica,arial,impact,sans-serif;padding: 10px;}
-    H2 {color:#FFFFFF; background-color:#333399;width: auto; padding:3px; border-width:normal;font-size: 14pt; font-family:helvetica,arial,impact,sans-serif;}
-    IMG {border-style:solid; border-width:thin; border-color:black;}
-    PRE {font-size:10pt;font-family:courier,monospace;border-style:solid; border-width:thin;padding:5px;background-color:#e5e8ff;}
-</STYLE>
-  </head>
-  <body>
-<h1>Index</h1>
-<table><tr><th>Locus ID</th><th>Seq. ID</th><th>Location</th><th>Custom annotation</th><th>Window ID</th><th>Location</th><th>Strand</th><th>N</th><th>Length</th><th>Mean pairwise ID</th><th>z</th><th>SCI</th><th>P</th></tr>
-';
+    print << 'EOF_HEADER';
+    <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+	<html>
+	<head>
+	<title>Index</title>
+	<meta http-equiv="Content-Type"
+	      content="text/html;
+	      charset=iso-8859-1">
+	<STYLE type="text/css">
+	TABLE {border-spacing:1px;
+	       background-color:#000000;}
+	TD {font-size:10pt;
+	    padding:7px;
+	    font-family:helvetica,arial,impact,sans-serif;
+	    text-align:center}
+	TH {font-size:10pt;
+	    background-color:#333399;
+	    color:#FFFFFF;
+	    padding:7px;
+	    font-family:helvetica,arial,impact,sans-serif;}
+	.darkcell {background-color:#d4d9ff;}
+	.lightcell {background-color:#e5e8ff;}
+	P {font-size:11pt;
+	   font-family:helvetica,arial,impact,sans-serif;}
+	H1 {font-size:20pt;
+	    color:#333399;
+	    text-align:center;
+	    font-family:helvetica,arial,impact,sans-serif;
+	    padding:10px;}
+	H2 {color:#FFFFFF;
+	    background-color:#333399;
+	    width:auto;
+	    padding:3px;
+	    border-width:normal;
+	    font-size:14pt;
+	    font-family:helvetica,arial,impact,sans-serif;}
+       IMG {border-style:solid;
+	    border-width:thin;
+	    border-color:black;}
+       PRE {font-size:10pt;
+	    font-family:courier,monospace;
+	    border-style:solid;
+	    border-width:thin;
+	    padding:5px;background-color:#e5e8ff;}
+       </STYLE>
+       </head>
+       <body>
+       <h1>Index</h1>
+       <table>
+       <tr>
+       <th>Locus ID</th>
+       <th>Seq. ID</th>
+       <th>Location</th>
+       <th>Custom annotation</th>
+       <th>Window ID</th>
+       <th>Location</th>
+       <th>Strand</th>
+       <th>N</th>
+       <th>Length</th>
+       <th>Mean pairwise ID</th>
+       <th>z</th><th>SCI</th>
+       <th>P</th>
+EOF_HEADER
+# add costum columns to table header
+foreach my $key (sort keys %COLS) {
+  print "<th>$COLS{$key}</th>\n";
+}
+print "</tr>\n";
 
   my @clusters=();
   my %hits=();
@@ -125,21 +177,21 @@ print
 	my @fields=split(/\t/,$cluster);
 	($seqID, $start, $end, my $name, $P)=
 	  ($fields[1],$fields[2],$fields[3],$fields[0],$fields[6]);
-	
+
 	my @customAnn=();
 
 	my $i=8;
-	
+
 	while (defined $fields[$i]){
-	  push @customAnn, $fields[$i];
+	  push @customAnn, $fields[$i]; # if $COLIDX != $i+1;
 	  $i++;
 	}
 	my $customAnn="&ndash;";
-	
+
 	if (@customAnn){
 	  $customAnn=join("<br>",@customAnn);
 	}
-	
+
 	my $clusterSize=@{$hits{$name}};
 
 	my $clusterName=$name;
@@ -147,7 +199,7 @@ print
 	$clusterName=~s/locus//;
 
 	my $location=niceNumber($start)." &ndash; ".niceNumber($end);
-	
+
 	print "<tr><td rowspan=$clusterSize class=\"$cellColor\"><a href=\"locus$clusterName/index.html\">$clusterName</a></td>";
 	print "<td rowspan=$clusterSize class=\"$cellColor\">$seqID</td>";
 	print "<td rowspan=$clusterSize class=\"$cellColor\">$location</td>";
@@ -159,18 +211,34 @@ print
 	  ($start, $end, $name, $strand, my $N, my $L, my $identity, my $z, my $SCI, my $P)=
 		($fields[3],$fields[4],$fields[0],$fields[5],$fields[6],$fields[7],$fields[8],$fields[14],$fields[15],$fields[17]);
 
+	  $COLDATA = $fields[$COLIDX-1] if $COLIDX >0;
 
 	  $name=~s/window//;
 
 	  $location=niceNumber($start)." &ndash; ".niceNumber($end);
-	
+
 	  print "<tr>" if not $isFirst;
 	  $isFirst=0;
-	  print "<td class=\"$cellColor\"><a href=\"locus$clusterName/index.html\#window$name\">$name</a></td><td class=\"$cellColor\">$location</td><td class=\"$cellColor\">$strand</td>
-             <td class=\"$cellColor\">$N</td><td class=\"$cellColor\">$L</td><td class=\"$cellColor\">$identity</td>
-             <td class=\"$cellColor\">$z</td><td class=\"$cellColor\">$SCI</td><td class=\"$cellColor\">$P</td></tr>\n";
+	  print
+	      "<td class=\"$cellColor\"><a href=\"locus$clusterName/index.html\#window$name\">$name</a></td>",
+	      "<td class=\"$cellColor\">$location</td>",
+	      "<td class=\"$cellColor\">$strand</td>",
+	      "<td class=\"$cellColor\">$N</td>",
+	      "<td class=\"$cellColor\">$L</td>",
+	      "<td class=\"$cellColor\">$identity</td>",
+	      "<td class=\"$cellColor\">$z</td>",
+	      "<td class=\"$cellColor\">$SCI</td>",
+	      "<td class=\"$cellColor\">$P</td>";
+	  # add values to custom column
+	  foreach my $key (sort keys %COLS) {
+	    my $value = (defined $fields[$key-1])
+		? $fields[$key-1] :'&nbsp;';
+	    print
+		"<td class=\"$cellColor\">$value</td>";
+	  }
+	  print "</tr>\n";
 	}
-	
+
 	if ($cellColor eq 'darkcell'){
 	  $cellColor='lightcell';
 	} else {
@@ -198,13 +266,13 @@ while (my $line=<>){
 	$isCluster=1;$isHit=0;
 	($seqID, $start, $end, $name, $P)=
 	  ($fields[1],$fields[2],$fields[3],$fields[0],$fields[6]);
-	
+
   } elsif ($line=~/^\s?window\d+/){
 	$isHit=1;$isCluster=0;
 	($seqID, $start, $end, $name, $P,$strand)=
 	  ($fields[2],$fields[3],$fields[4],$fields[0],$fields[16],$fields[5]);
   }
-	
+
   if ($ucsc){
 	if ($seqID=~/^(.*)\.(.*)$/){
 	  $seqID=$2;
@@ -292,7 +360,7 @@ sub extractSeq{
   if (not $realFile){
 
 	my @string=();
-	
+
 	foreach my $entry (@guess){
 	  push @string, "\"$seqDir/$entry\"";
 	}
@@ -328,6 +396,13 @@ Generate GFF formatted output.
 =item B<-b, --bed>
 
 Generate BED formatted output.
+
+=item B<-c #:LABEL, --col #:LABEL>
+
+Append a column named LABEL to the HTML-table holding the data from
+the input file column with index #. e.g. C<rnazIndex.pl --html --col
+19:Alifoldz --col 20:RNAmicro annotated.dat>
+
 
 =item B<-f, --fasta>
 
