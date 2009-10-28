@@ -25,6 +25,32 @@
 #include "mfe_stdv.inc"
 #include "mfe_avg.inc"
 #include "decision.inc"
+#include "decision_dinucleotide.inc"
+#include "decision_dinucleotide_structural.inc"
+
+
+/* Here we read in the models as strings */
+#include "L50-200_GC20-30_avg.inc"
+#include "L50-200_GC20-30_stdv.inc"
+#include "L50-200_GC30-36_avg.inc"
+#include "L50-200_GC30-36_stdv.inc"
+#include "L50-200_GC36-40_avg.inc"
+#include "L50-200_GC36-40_stdv.inc"
+#include "L50-200_GC40-46_avg.inc"
+#include "L50-200_GC40-46_stdv.inc"
+#include "L50-200_GC46-50_avg.inc"
+#include "L50-200_GC46-50_stdv.inc"
+#include "L50-200_GC50-56_avg.inc"
+#include "L50-200_GC50-56_stdv.inc"
+#include "L50-200_GC56-60_avg.inc"
+#include "L50-200_GC56-60_stdv.inc"
+#include "L50-200_GC60-66_avg.inc"
+#include "L50-200_GC60-66_stdv.inc"
+#include "L50-200_GC66-70_avg.inc"
+#include "L50-200_GC66-70_stdv.inc"
+#include "L50-200_GC70-80_avg.inc"
+#include "L50-200_GC70-80_stdv.inc"
+
 
 
 /* All values in the SVMs are normalized to mean 0 and standard
@@ -33,14 +59,22 @@
 
 /*                              Mean  Std.Dev. */
 double scale_regression[][2]={{0.5,0.1581213081},    /* GC-content  */
-							  {0.5,0.1581213081},    /* "A-content" */
-							  {0.5,0.1581213081},    /* "C-content" */
-							  {225.0,114.569772373}};/* length      */
+			      {0.5,0.1581213081},    /* "A-content" */
+			      {0.5,0.1581213081},    /* "C-content" */
+			      {225.0,114.569772373}};/* length      */
 
 double scale_decision[][2]= {{-7.87,2.76 }, /* z   */
-							 {0,1.23 },     /* SCI */
-							 {52.35,99.55}, /* ID  */
-							 {2,6}};        /* k   */
+			     {0,1.23 },     /* SCI */
+			     {52.35,99.55}, /* ID  */
+			     {2,6}};        /* k   */
+
+double scale_decision_dinucleotide[][2]= {{-8.15,2.01 }, /* z   */
+					  {0,1.29 },     /* SCI */
+					  {0,1.28718}}; /* norm. Shannon entropy  */
+
+double scale_decision_dinucleotide_structural[][2]= {{-8.13,2.01 }, /* z   */
+						     {0,1.31 },     /* SCI */
+						     {0,1.38353}}; /* norm. Shannon entropy  */
 
 
 /* Also y-values are scaled in the regression SVMs, so also here the
@@ -72,8 +106,8 @@ void scale_node_linear(struct svm_node* node,double scale[][2]){
   int i=0;
   double min,max;
   double from,to;
-  from=-1;
-  to=1;
+  from=-1.0;
+  to=1.0;
   while (1){
 	min=scale[node[i].index-1][0];
 	max=scale[node[i].index-1][1];
@@ -92,8 +126,16 @@ void scale_regression_node(struct svm_node* node){
 }
 
 
-void scale_decision_node(struct svm_node* node){
-  scale_node_linear(node,scale_decision);
+void scale_decision_node(struct svm_node* node, int decision_model_type){
+  if (decision_model_type == 1) {
+    scale_node_linear(node,scale_decision);
+  }
+  if (decision_model_type == 2) {
+    scale_node_linear(node,scale_decision_dinucleotide);
+  }
+  if (decision_model_type == 3) {
+    scale_node_linear(node,scale_decision_dinucleotide_structural);
+  }
 }
 
 
@@ -111,25 +153,57 @@ void backscale_regression(double* avg, double* stdv){
    hard-coded in this file are used */
 
 void get_regression_models(struct svm_model** avg_model,
-						   struct svm_model** stdv_model,
-						   char *basefilename){
+			   struct svm_model** stdv_model,
+			   int type){
 
-  char fn[256];
-
-  if (basefilename!=NULL){
-	strncpy(fn, basefilename, 238); strcat(fn, "/mfe_avg.model");
-	*avg_model = svm_load_model(fn);
-	strncpy(fn, basefilename, 237); strcat(fn, "/mfe_stdv.model");
-	*stdv_model = svm_load_model(fn);
-  } else {
-	*avg_model=svm_load_model_string(default_avg_model_string);
-	*stdv_model=svm_load_model_string(default_stdv_model_string);
+  if (type == -1) {
+    *avg_model=svm_load_model_string(default_avg_model_string);
+    *stdv_model=svm_load_model_string(default_stdv_model_string);
   }
- 
+  if (type == 0) {
+    *avg_model=svm_load_model_string(avg_20_30_string);
+    *stdv_model=svm_load_model_string(stdv_20_30_string);
+  }
+  if (type == 1) {
+    *avg_model=svm_load_model_string(avg_30_36_string);
+    *stdv_model=svm_load_model_string(stdv_30_36_string);
+    }
+  if (type == 2) { 
+    *avg_model=svm_load_model_string(avg_36_40_string);
+    *stdv_model=svm_load_model_string(stdv_36_40_string);
+  }
+  if (type == 3) {
+    *avg_model=svm_load_model_string(avg_40_46_string);
+    *stdv_model=svm_load_model_string(stdv_40_46_string);
+  }
+  if (type == 4) {
+    *avg_model=svm_load_model_string(avg_46_50_string);
+    *stdv_model=svm_load_model_string(stdv_46_50_string);
+  }
+  if (type == 5) {
+    *avg_model=svm_load_model_string(avg_50_56_string);
+    *stdv_model=svm_load_model_string(stdv_50_56_string);
+  }
+  if (type == 6) {
+    *avg_model=svm_load_model_string(avg_56_60_string);
+    *stdv_model=svm_load_model_string(stdv_56_60_string);
+  }
+  if (type == 7) {
+      *avg_model=svm_load_model_string(avg_60_66_string);
+      *stdv_model=svm_load_model_string(stdv_60_66_string);
+  }
+  if (type == 8) {
+    *avg_model=svm_load_model_string(avg_66_70_string);
+    *stdv_model=svm_load_model_string(stdv_66_70_string);
+  }
+  if (type == 9) {
+    *avg_model=svm_load_model_string(avg_70_80_string);
+    *stdv_model=svm_load_model_string(stdv_70_80_string);
+  }
 }
 
 
-struct svm_model* get_decision_model(char *basefilename){
+struct svm_model* get_decision_model(char *basefilename, int decision_model_type){
 
   char fn[256];
 
@@ -137,11 +211,19 @@ struct svm_model* get_decision_model(char *basefilename){
   struct svm_model* model=NULL;
   
   if (basefilename!=NULL){
-	strcpy(fn, basefilename); strcat(fn, "/decision.model");
-	model=svm_load_model(fn);
+    //strcpy(fn, basefilename); strcat(fn, "/decision.model");
+    //model=svm_load_model(fn);
 
   } else {
+    if (decision_model_type == 1) {
 	model=svm_load_model_string(default_decision_model_string);
+    }
+    if (decision_model_type == 2) {
+	model=svm_load_model_string(decision_dinucleotide_string);
+    }
+    if (decision_model_type == 3) {
+	model=svm_load_model_string(decision_dinucleotide_structural_string);
+    }
   }
   
   return model;
@@ -183,7 +265,7 @@ struct svm_model{
   int free_sv;
 };
 
-struct svm_model *svm_load_model_string(char *modelString){
+struct svm_model* svm_load_model_string(char *modelString){
 
   /* redefinition from svm.cpp */
   char *svm_type_table[]={"c_svc","nu_svc","one_class","epsilon_svr","nu_svr",NULL};
@@ -333,7 +415,6 @@ struct svm_model *svm_load_model_string(char *modelString){
 	elements++;
 	i++;
   }
-
 
   /* allocate memory for SVs and coefficients */
   m = model->nr_class - 1;

@@ -14,16 +14,18 @@ struct aln {
 };
 
 
-int readClustal(FILE *clust,
+int read_clustal(FILE *clust,
 						 struct aln *alignedSeqs[]);
 
-int readMaf(FILE *clust,
+int read_maf(FILE *clust,
 						 struct aln *alignedSeqs[]);
 
 
-char *consensusSeq(const struct aln *AS[]);
+char *consensus(const struct aln *AS[]);
 
 double meanPairID(const struct aln *AS[]);
+
+double NormShannonEntropy(const struct aln *AS[]);
 
 void revAln(struct aln *AS[]);
 

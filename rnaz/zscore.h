@@ -10,8 +10,8 @@
  *                                                                   *
  *********************************************************************/
 
-void regression_svm_init(char *basefilename);
+void regression_svm_init();
 
 void regression_svm_free();
 
-double mfe_zscore(const char *seq,double mfe);
+double mfe_zscore(const char *seq, double mfe, int *type, int avoid_shuffle, char* warning_string);

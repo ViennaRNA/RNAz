@@ -33,7 +33,7 @@
 
 #include "energy_const.h"
 /*@unused@*/
-static char rcsid[] = "$Id: energy_par.c,v 1.2 2007-07-22 20:58:48 wash Exp $";
+static char rcsid[] = "$Id: energy_par.c,v 1.1.1.1 2004/09/18 13:25:53 wash Exp $";
 
 #define NST 0     /* Energy for nonstandard stacked pairs */
 #define DEF -50   /* Default terminal mismatch, used for I */
@@ -355,8 +355,5 @@ PUBLIC int Triloop_E37[40];
 /* penalty for AU (or GU) terminating helix) */
 /* mismatches already contain these */
 PUBLIC int TerminalAU = 50;
-
-/* penalty for forming a bi-molecular duplex */
-PUBLIC int DuplexInit = 410;
 
 #include "intloops.h"

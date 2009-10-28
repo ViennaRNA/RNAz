@@ -12,4 +12,6 @@ option		"cutoff"	p		"Probability cutoff"	  float		no
 option		"show-gaps"	g		"Display alignment with gap"	flag	off
 option		"predict-strand"	s		"Use strand predictor"	flag	off
 option		"plot"	x		"Generate graphical output"	flag	off
-
+option		"dinucleotide"	d		"Use dinucleotide based z-scores"	flag	off
+option		"locarnate"	l		"Use decision model for structural alignments"	flag	off
+option		"no-shuffle"	n		"Never do explicit shuffling"	flag	off

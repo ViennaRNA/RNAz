@@ -7,9 +7,11 @@
  *                                                                   *
  *	                    Stefan Washietl                              *
  *                                                                   *
- *	   $Id: rnaz_utils.c,v 1.4 2008-01-24 10:18:20 wash Exp $              *
+ *	   $Id: rnaz_utils.c,v 1.3 2006/10/12 13:17:42 wash Exp $              *
  *                                                                   *
  *********************************************************************/
+
+
 
 #include "config.h"
 #include <stdio.h>
@@ -30,7 +32,7 @@
 
 /********************************************************************
  *                                                                  *
- * readClustal -- read CLUSTAL W formatted file                    *
+ * read_clustal -- read CLUSTAL W formatted file                    *
  *                                                                  *
  ********************************************************************
  *                                                                  *
@@ -42,7 +44,7 @@
  *                                                                  *
  ********************************************************************/
 
-int readClustal(FILE *clust, struct aln *alignedSeqs[]) {
+int read_clustal(FILE *clust, struct aln *alignedSeqs[]) {
 
   char *line, name[100]={'\0'}, *seq;
   int  n, nn=0, num_seq = 0;
@@ -117,7 +119,7 @@ int readClustal(FILE *clust, struct aln *alignedSeqs[]) {
 
 /********************************************************************
  *                                                                  *
- * readMaf -- read MAF formatted file                              *
+ * read_maf -- read MAF formatted file                              *
  *                                                                  *
  ********************************************************************
  *                                                                  *
@@ -130,7 +132,7 @@ int readClustal(FILE *clust, struct aln *alignedSeqs[]) {
  ********************************************************************/
 
 
-int readMaf(FILE *clust, struct aln *alignedSeqs[]) {
+int read_maf(FILE *clust, struct aln *alignedSeqs[]) {
 
   char *line;
   int num_seq = 0;
@@ -229,7 +231,7 @@ int readMaf(FILE *clust, struct aln *alignedSeqs[]) {
 
 /********************************************************************
  *                                                                  *
- * consensusSeq -- Calculates consensus of alignment                *
+ * consensus -- Calculates consensus of alignment                   *
  *                                                                  *
  ********************************************************************
  *                                                                  *
@@ -239,7 +241,7 @@ int readMaf(FILE *clust, struct aln *alignedSeqs[]) {
  *                                                                  *
  ********************************************************************/
 
- char *consensusSeq(const struct aln *AS[]) {
+ char *consensus(const struct aln *AS[]) {
   char *string;
   int i,n;
   n = strlen(AS[0]->seq);
@@ -256,6 +258,69 @@ int readMaf(FILE *clust, struct aln *alignedSeqs[]) {
   return string;
 }
 
+/********************************************************************
+ *                                                                  *
+ * NormShannonEntropy -- Calculates the Shannon entropy of alignment*
+ *                                                                  *
+ ********************************************************************
+ *                                                                  *
+ * AS ... array with sequences                                      *
+ *                                                                  *
+ * Returns Shannon entropy                                          *
+ *                                                                  *
+ ********************************************************************/
+
+ double NormShannonEntropy(const struct aln *AS[]) {
+
+   int i,k,length,nr_seqs;
+  int a,c,g,t,rest;
+  double entropy;
+  entropy = 0.0;
+
+  length=strlen(AS[0]->seq);
+  
+  for (k=0;k<length;k++){
+    /* count base frequencies for the current column */
+    a = c = g = t = rest = nr_seqs = 0;
+    for (i=0;AS[i]!=NULL;i++){
+      switch(AS[i]->seq[k])
+      {
+        case 'A': a++; break;
+        case 'C': c++; break;
+        case 'G': g++; break;
+	case 'T': t++; break;
+	case 'U': t++; break;
+	default : rest++; break;
+      }
+      nr_seqs++;
+    }
+    
+    /* calcualte entropy*/
+    if (a > 0) {
+      double tmp = (double) a/nr_seqs;
+      entropy += tmp * (log(tmp)/log(2.0));
+    }
+    if (c > 0) {
+      double tmp = (double) c/nr_seqs;
+      entropy += tmp * (log(tmp)/log(2.0));
+    }
+    if (g > 0) {
+      double tmp = (double) g/nr_seqs;
+      entropy += tmp * (log(tmp)/log(2.0));
+    }
+    if (t > 0) {
+      double tmp = (double) t/nr_seqs;
+      entropy += tmp * (log(tmp)/log(2.0));
+    }
+    if (rest > 0) {
+	double tmp = (double) rest/nr_seqs;
+	entropy += tmp * (log(tmp)/log(2.0));
+    }
+  }
+  
+  return (-1.0) * entropy/length;
+}
+
 
 /********************************************************************
  *                                                                  *
@@ -268,7 +333,6 @@ int readMaf(FILE *clust, struct aln *alignedSeqs[]) {
  * Returns mean pair ID in percent                                  *
  *                                                                  *
  ********************************************************************/
-
 
  double meanPairID(const struct aln *AS[]) {
 
@@ -295,6 +359,8 @@ int readMaf(FILE *clust, struct aln *alignedSeqs[]) {
   return (double)(matches)/pairs*100;
   
 }
+
+
 
 /********************************************************************
  *                                                                  *
@@ -657,6 +723,8 @@ double combPerPair(struct aln *AS[],char* structure){
 	}
 	i++;
   }
+
+  free(stack);
 
   if (nPairs>0){
 	return((double)nCombs/nPairs);

@@ -1,5 +1,5 @@
 .RData
-libsvm-2.8/
+libsvm-*/
 aclocal.m4
 autom4te.cache
 config.h
@@ -21,4 +21,4 @@ TAGS
 .deps
 *.[oa]
 *~
-
+mkinstalldirs

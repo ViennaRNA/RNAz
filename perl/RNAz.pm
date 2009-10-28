@@ -897,7 +897,8 @@ sub parseRNAz{
 
   my @rnaz=split(/^/, $rnaz);
   my ($N,$identity,$columns,$decValue,$P,$z,$sci,$energy,$strand,
-	  $covariance,$combPerPair,$meanMFE,$consensusMFE,$consensusSeq,$consensusFold);
+      $covariance,$combPerPair,$meanMFE,$consensusMFE,$consensusSeq,
+      $consensusFold, $GCcontent, $ShannonEntropy);
 
   my @aln=();
 
@@ -918,6 +919,8 @@ sub parseRNAz{
 	$combPerPair=$1 if ($line=~/Combinations\/Pair:\s*(-?\d+.\d+)/);
 	$consensusMFE=$1 if ($line=~/Consensus MFE:\s*(-?\d+.\d+)/);
 	$meanMFE=$1 if ($line=~/Mean single sequence MFE:\s*(-?\d+.\d+)/);
+	$GCcontent=$1 if ($line=~/G\+C content:\s(\d+.\d+)/);
+	$ShannonEntropy=$1 if ($line=~/Shannon entropy:\s*(\d+.\d+)/);
 
 	if ($line=~/^>/){
 	  chomp($rnaz[$i+1]);
@@ -952,25 +955,28 @@ sub parseRNAz{
   }
 
   return {"N"=>$N,
-		  "identity"=>$identity,
-		  "decValue"=>$decValue,
-		  "columns"=>$columns,
-		  "P"=>$P,
-		  "z"=>$z,
-		  "sci"=>$sci,
-		  "energy"=>$energy,
-		  "covariance"=>$covariance,
-		  "combPerPair"=>$combPerPair,
-		  "consensusMFE"=>$consensusMFE,
-		  "meanMFE"=>$meanMFE,
-		  "consensusSeq"=>$consensusSeq,
-		  "consensusFold"=>$consensusFold,
-		  "refSeqName"=>$aln[0]->{name},
-		  "refSeqStart"=>$aln[0]->{start},
-		  "refSeqEnd"=>$aln[0]->{end},
-		  "refSeqStrand"=>$aln[0]->{strand},
-		  "aln"=>[@aln],
-		  "rawOutput"=>$rnaz};
+	  "identity"=>$identity,
+	  "decValue"=>$decValue,
+	  "columns"=>$columns,
+	  "P"=>$P,
+	  "z"=>$z,
+	  "sci"=>$sci,
+	  "energy"=>$energy,
+	  "covariance"=>$covariance,
+	  "combPerPair"=>$combPerPair,
+	  "consensusMFE"=>$consensusMFE,
+	  "meanMFE"=>$meanMFE,
+	  "consensusSeq"=>$consensusSeq,
+	  "consensusFold"=>$consensusFold,
+	  "refSeqName"=>$aln[0]->{name},
+	  "refSeqStart"=>$aln[0]->{start},
+	  "refSeqEnd"=>$aln[0]->{end},
+	  "refSeqStrand"=>$aln[0]->{strand},
+	  "aln"=>[@aln],
+	  "rawOutput"=>$rnaz,
+      "strand" => $strand,
+	  "GC"=>$GCcontent,
+	  "entropy"=>$ShannonEntropy};
 
 }
 

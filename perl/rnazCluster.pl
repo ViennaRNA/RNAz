@@ -77,7 +77,7 @@ if ($printHeader){
   }
 
   if ($printHits){
-	print "# windowID\tclusterID\tseqID\tstart\tend\tstrand\tN\tcolumns\tidentity\tmeanMFE\tconsensusMFE\tenergyTerm\tcovarianceTerm\tcombPerPair\tz\tSCI\tdecValue\tP\n";
+	print "# windowID\tclusterID\tseqID\tstart\tend\tstrand\tN\tcolumns\tidentity\tmeanMFE\tconsensusMFE\tenergyTerm\tcovarianceTerm\tcombPerPair\tz\tSCI\tdecValue\tP\nGC";
   }
 }
 
@@ -261,7 +261,7 @@ sub hitLine{
 
   my %data=%{$_[0]};
   my @tmp=();
-  foreach my $key (qw(hitID clusterID refSeqName refSeqStart refSeqEnd refSeqStrand N columns identity meanMFE consensusMFE energy covariance combPerPair z sci decValue P)){
+  foreach my $key (qw(hitID clusterID refSeqName refSeqStart refSeqEnd refSeqStrand N columns identity meanMFE consensusMFE energy covariance combPerPair z sci decValue P GC)){
 	push @tmp,$data{$key};
   }
   print join("\t",@tmp);
