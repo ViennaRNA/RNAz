@@ -27,6 +27,8 @@ if (!-e 'html'){
 
 open(OUT,">$outFile");
 
+print "Converting PODs...\n";
+
 foreach my $pod (@pods){
 
   (my $baseName,my $dir,my $ext) = fileparse($pod, qr/\..*/);
@@ -70,3 +72,18 @@ foreach my $file (glob("html/*.html")){
 	print OUT $line;
   }
 }
+
+
+print "TeXing manual...\n";
+
+`latex manual`;
+`bibtex manual`;
+`latex manual`;
+`latex manual`;
+`dvipdf manual.dvi`;
+`cp manual.pdf ..`;
+
+
+print "Creating manpage...\n";
+chdir "../man";
+`pod2man RNAz.pod > RNAz.1`
