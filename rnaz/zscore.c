@@ -353,6 +353,8 @@ void zscore_explicitly_shuffled(const char *seq, double *avg, double *stdv, int 
     /* generate seed from time */
     srand((unsigned)time(NULL));
     strcpy(tmp, seq);
+
+    printf("INHERE\n");
     
     for (counter = 0; counter < n; counter++)
     {
@@ -730,10 +732,9 @@ void predict_values(const char *seq, double *avg, double *stdv, int *type,
 
   //printf("Type: %d\n", *type);
   /* now we have to see if user allowed explicite shuffling */
-  if (*type == 1 && avoid_shuffle == 1 && length >= 50 && length <= 400) *type = 0; /* mono */
-  if (*type == 3 && avoid_shuffle == 1 && length >= 50 && length <= 200) *type = 2; /* di */
-  //printf("Type: %d\n", *type);
-
+  if (*type == 1 && (length >= 50 || length <= 400 || avoid_shuffle)) *type = 0; /* mono */
+  if (*type == 3 && (length >= 50 || length <= 400 || avoid_shuffle)) *type = 2; /* di */
+  
   /*********************************************/
   /* now we DEFINITELY know which type to take */
 

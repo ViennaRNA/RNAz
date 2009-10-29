@@ -2,12 +2,12 @@
  *                                                                   *
  *                              RNAz.c                               *
  *                                                                   *
- *	Assess alignments for exceptionally stable and/or conserved  *
- *	secondary structures using RNAalifold/RNAfold and SVMs.      *
+ *	Assess alignments for exceptionally stable and/or conserved      *
+ *	secondary structures using RNAalifold/RNAfold and SVMs.          *
  *                                                                   *
- *	          c Stefan Washietl, Ivo L Hofacker                  *
+ *	          c Stefan Washietl, Ivo L Hofacker                      *
  *                                                                   *
- *	   $Id: RNAz.c,v 1.12 2006/10/12 16:58:18 wash Exp $         *
+ *	   $Id: RNAz.c,v 1.12 2006/10/12 16:58:18 wash Exp $             *
  *                                                                   *
  *********************************************************************/
 
@@ -200,9 +200,6 @@ int main(int argc, char *argv[])
 
   decision_model=get_decision_model(NULL, decision_model_type);
 
-  printf("decision_model: %i\n", decision_model_type);
-  printf("avoid_shuffle:  %i\n", avoid_shuffle);
-
   /* Initialize Regression Models for mononucleotide */
   /* Not needed if we score with dinucleotides */
   if (z_score_type == 0) regression_svm_init();
@@ -222,7 +219,7 @@ int main(int argc, char *argv[])
 	/* if a slice is specified by the user */
   
 	if ((from!=-1 || to!=-1) && (countAln==1)){
-	  
+      
 	  if ((from>=to)||(from<=0)||(to>length)){
 		nrerror("ERROR: Invalid window range given.\n");
 	  }
@@ -309,8 +306,10 @@ int main(int argc, char *argv[])
 		/* z-score type may be overwritten. If it is out of training
 		   bounds, we switch to shuffling if allowed (avoid_shuffle). */
 		int z_score_type_orig = z_score_type;
+
+
 		singleZ=mfe_zscore(woGapsSeq,singleMFE, &z_score_type, avoid_shuffle, warningString_regression);
-	  
+
 		GC+=(double) singleGC/nonGaps;
 		sumZ+=singleZ;
 		sumMFE+=singleMFE;
