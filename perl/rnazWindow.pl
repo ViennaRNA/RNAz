@@ -7,365 +7,376 @@ use RNAz;
 use Getopt::Long;
 use Pod::Usage;
 
+my $window        = 120;
+my $slide         = 40;
+my $maxLength     = undef;
+my $minLength     = 50;
+my $maxGap        = 0.25;
+my $maxMasked     = 0.1;
+my $minN          = 2;
+my $maxN          = 6;
+my $numSamples    = 1;
+my $refSeq        = 1;
+my $noReference   = 0;
+my $minID         = 50;
+my $optID         = 80;
+my $maxID         = 100;
+my $forwardStrand = 0;
+my $reverseStrand = 0;
+my $bothStrands   = 0;
+my $verbose       = 0;
+my $version       = 0;
+my $help          = 0;
+my $man           = 0;
 
-my $window=120;
-my $slide=40;
-my $maxLength=undef;
-my $minLength=50;
-my $maxGap=0.25;
-my $maxMasked=0.1;
-my $minN=2;
-my $maxN=6;
-my $numSamples=1;
-my $refSeq=1;
-my $noReference=0;
-my $minID=50;
-my $optID=80;
-my $maxID=100;
-my $forwardStrand=0;
-my $reverseStrand=0;
-my $bothStrands=0;
-my $verbose=0;
-my $version=0;
-my $help=0;
-my $man=0;
-
-GetOptions('window:i' => \$window,
-		   'w:i' => \$window,
-		   'slide:i' => \$slide,
-		   's:i' => \$slide,
-		   'm:i' => \$maxLength,
-		   'max-length:i' => \$maxLength,
-		   'min-length:i' => \$minLength,
-		   'max-gap:f' => \$maxGap,
-		   'max-masked:f' => \$maxMasked,
-		   'max-seqs:i' => \$maxN,
-		   'num-samples:i'=>\$numSamples,
-		   'min-seqs:i' => \$minN,
-		   'min-id:f' => \$minID,
-		   'max-id:f' => \$maxID,
-		   'opt-id:f' => \$optID,
-		   'both-strands'=>\$bothStrands,
-		   'forward'=>\$forwardStrand,
-		   'reverse'=>\$reverseStrand,
-		   'no-reference' => \$noReference,
-		   'verbose'=>\$verbose,
-		   'help'=>\$help,
-		   'man'=>\$man,
-		   'h'=>\$help,
-		   'version'=>\$version,
-		   'v'=>\$version
-		  ) or pod2usage(2);
-
+GetOptions(
+  'window:i'      => \$window,
+  'w:i'           => \$window,
+  'slide:i'       => \$slide,
+  's:i'           => \$slide,
+  'm:i'           => \$maxLength,
+  'max-length:i'  => \$maxLength,
+  'min-length:i'  => \$minLength,
+  'max-gap:f'     => \$maxGap,
+  'max-masked:f'  => \$maxMasked,
+  'max-seqs:i'    => \$maxN,
+  'num-samples:i' => \$numSamples,
+  'min-seqs:i'    => \$minN,
+  'min-id:f'      => \$minID,
+  'max-id:f'      => \$maxID,
+  'opt-id:f'      => \$optID,
+  'both-strands'  => \$bothStrands,
+  'forward'       => \$forwardStrand,
+  'reverse'       => \$reverseStrand,
+  'no-reference'  => \$noReference,
+  'verbose'       => \$verbose,
+  'help'          => \$help,
+  'man'           => \$man,
+  'h'             => \$help,
+  'version'       => \$version,
+  'v'             => \$version
+) or pod2usage(2);
 
 pod2usage(1) if $help;
-pod2usage(-verbose => 2) if $man;
+pod2usage( -verbose => 2 ) if $man;
 
-if ($version){
+if ($version) {
   print "\nrnazWindow.pl is part of RNAz $RNAz::rnazVersion\n\n";
   print "http://www.tbi.univie.ac.at/~wash/RNAz\n\n";
   exit(0);
 }
 
 # If no strand is specified, default is forward
-$forwardStrand=1 if (!$forwardStrand and
-					 !$reverseStrand and
-					 !$bothStrands);
+$forwardStrand = 1 if ( !$forwardStrand
+  and !$reverseStrand
+  and !$bothStrands );
 
+$refSeq = 0 if ($noReference);
 
-$refSeq=0 if ($noReference);
+$maxLength = $window if not defined $maxLength;
 
-$maxLength=$window if not defined $maxLength;
+my $originalWindow = $window; # Save command line option because
+                              # $window is changed for small
+                              # alignments dynamically
 
-my $fileName=shift @ARGV;
+my $fileName = shift @ARGV;
 my $fh;
 
-if (!defined $fileName){
-  $fh=*STDIN;
+if ( !defined $fileName ) {
+  $fh = *STDIN;
 } else {
-  open($fh,"<$fileName") || die("Could not open file $fileName ($!)");
+  open( $fh, "<$fileName" ) || die("Could not open file $fileName ($!)");
 }
 
-my $alnFormat=checkFormat($fh);
+my $alnFormat = checkFormat($fh);
 
-my $alnCounter=0;
+my $alnCounter = 0;
 
-while (my $alnString=getNextAln($alnFormat,$fh)){
+while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
+
+  $window = $originalWindow; # reset $window size in case it has been altered 
 
   $alnCounter++;
 
   #print STDERR "Processing aln $alnCounter\n";
 
-  my $fullAln=parseAln($alnString,$alnFormat);
+  my $fullAln = parseAln( $alnString, $alnFormat );
 
-  my @tmp=();
-  foreach (@$fullAln){
-	push @tmp,{%{$_}};
+  my @tmp = ();
+  foreach (@$fullAln) {
+    push @tmp, { %{$_} };
   }
-  my $shrinkingAln=[@tmp];
+  my $shrinkingAln = [@tmp];
 
-  my $sliceStart=0;
-  my $prevSliceStart=0;
-  my $sliceEnd=0;
-  my $length=length($fullAln->[0]->{seq});
+  my $sliceStart     = 0;
+  my $prevSliceStart = 0;
+  my $sliceEnd       = 0;
+  my $length         = length( $fullAln->[0]->{seq} );
 
-
-  if ($length <= $maxLength){
-	$window=$length;
+  if ( $length <= $maxLength ) {
+    $window = $length;
   }
 
-  my $refName=$fullAln->[0]->{name};
+  my $refName = $fullAln->[0]->{name};
 
-  my $windowCounter=0;
+  my $windowCounter = 0;
 
-  while ($sliceStart<$length){
+  while ( $sliceStart < $length ) {
 
-	$windowCounter++;
+    $windowCounter++;
 
-	#print STDERR "Processing window $windowCounter\n";
-	
-	$sliceEnd=$sliceStart+$window;
-	if ($sliceEnd>$length){
-	  $sliceEnd=$length;
-	  $sliceStart=$length-$window;
-	  $sliceStart=0 if ($sliceStart<0);
-	}
-	
-	#my $slice=sliceAlnByColumn($fullAln,$sliceStart,$sliceEnd);
-	
+    #print STDERR "Processing window $windowCounter\n";
 
-	# correct ends without warning if outside of valid range
-	$sliceStart=0 if ($sliceStart<0);
-	$sliceEnd=length($fullAln->[0]->{seq}) if ($sliceEnd > length($fullAln->[0]->{seq}));
+    $sliceEnd = $sliceStart + $window;
+    if ( $sliceEnd > $length ) {
+      $sliceEnd   = $length;
+      $sliceStart = $length - $window;
+      $sliceStart = 0 if ( $sliceStart < 0 );
+    }
 
-	# make deep copy of list of hash
-	my @newAln=();
-	foreach (@$fullAln){
-	  push @newAln,{%{$_}};
-	}
+    #my $slice=sliceAlnByColumn($fullAln,$sliceStart,$sliceEnd);
 
-	#print "prev: $prevSliceStart, $sliceStart\n";
-	
-	foreach my $i (0..$#newAln){
+    # correct ends without warning if outside of valid range
+    $sliceStart = 0 if ( $sliceStart < 0 );
+    $sliceEnd = length( $fullAln->[0]->{seq} ) if ( $sliceEnd > length( $fullAln->[0]->{seq} ) );
 
-	  if ((defined $newAln[$i]->{start}) and (defined $newAln[$i]->{start})){
-		my $oldStart=$newAln[$i]->{start};
-		my $oldEnd=$newAln[$i]->{end};
-		#$newAln[$i]->{start}=alnCol2genomePos($newAln[$i]->{seq},$oldStart,$sliceStart);
-		#$newAln[$i]->{end}=alnCol2genomePos($newAln[$i]->{seq},$oldStart,$sliceEnd-1)+1;
+    # make deep copy of list of hash
+    my @newAln = ();
+    foreach (@$fullAln) {
+      push @newAln, { %{$_} };
+    }
 
-		$newAln[$i]->{start}=alnCol2genomePos($shrinkingAln->[$i]->{seq},
-											  $shrinkingAln->[$i]->{start},
-											  $sliceStart-$prevSliceStart,'after');
+    #print "prev: $prevSliceStart, $sliceStart\n";
 
-		$newAln[$i]->{end}=alnCol2genomePos($shrinkingAln->[$i]->{seq},
-											$shrinkingAln->[$i]->{start},
-											$sliceEnd-$prevSliceStart-1,'before')+1;
+    foreach my $i ( 0 .. $#newAln ) {
 
-		
-	  }
+      if ( ( defined $newAln[$i]->{start} ) and ( defined $newAln[$i]->{start} ) ) {
+        my $oldStart = $newAln[$i]->{start};
+        my $oldEnd   = $newAln[$i]->{end};
 
-	  $newAln[$i]->{seq}=substr($newAln[$i]->{seq},$sliceStart,$sliceEnd-$sliceStart);
+        #$newAln[$i]->{start}=alnCol2genomePos($newAln[$i]->{seq},$oldStart,$sliceStart);
+        #$newAln[$i]->{end}=alnCol2genomePos($newAln[$i]->{seq},$oldStart,$sliceEnd-1)+1;
 
-	}
+        $newAln[$i]->{start} = alnCol2genomePos(
+          $shrinkingAln->[$i]->{seq},
+          $shrinkingAln->[$i]->{start},
+          $sliceStart - $prevSliceStart, 'after'
+        );
 
-	my $slice=[@newAln];
-	
-	my $sliceLength=$sliceEnd-$sliceStart;
+        $newAln[$i]->{end} = alnCol2genomePos(
+          $shrinkingAln->[$i]->{seq},
+          $shrinkingAln->[$i]->{start},
+          $sliceEnd - $prevSliceStart - 1, 'before'
+        ) + 1;
 
-	foreach my $i (0..@{$shrinkingAln}-1){
+      }
 
-	  $shrinkingAln->[$i]->{seq}=substr($fullAln->[$i]->{seq},
-										$sliceStart,$length-$sliceStart);
-	  $shrinkingAln->[$i]->{start}=$slice->[$i]->{start};
-	}
+      $newAln[$i]->{seq} = substr( $newAln[$i]->{seq}, $sliceStart, $sliceEnd - $sliceStart );
 
-	
-	
-#	print "BEFORE:\n";
-#	print(formatAln($slice,"CLUSTAL"));
+    }
 
-	if ($refSeq){
-	  my $numGaps=($slice->[0]->{seq}=~tr/-./-/);
+    my $slice = [@newAln];
 
-	  if ($numGaps/$sliceLength>$maxGap){
-		$slice->[0]=undef;
+    my $sliceLength = $sliceEnd - $sliceStart;
 
-		if ($verbose){
-		  print STDERR "Alignment $alnCounter, window $windowCounter: Removing seq 1: too many gaps.\n";
-		}
-	  } else {
+    foreach my $i ( 0 .. @{$shrinkingAln} - 1 ) {
 
-		for my $i (1..@$slice-1){
+      $shrinkingAln->[$i]->{seq} =
+        substr( $fullAln->[$i]->{seq}, $sliceStart, $length - $sliceStart );
+      $shrinkingAln->[$i]->{start} = $slice->[$i]->{start};
+    }
 
-		  my @tmpAln=({seq=>$slice->[0]->{seq}},
-					  {seq=>$slice->[$i]->{seq}});
+    #	print "BEFORE:\n";
+    #	print(formatAln($slice,"CLUSTAL"));
 
-		  removeCommonGaps(\@tmpAln);
+    if ($refSeq) {
+      my $numGaps = ( $slice->[0]->{seq} =~ tr/-./-/ );
 
-		  my $numGaps0=($tmpAln[0]->{seq}=~tr/-./-/);
-		  my $numGaps1=($tmpAln[1]->{seq}=~tr/-./-/);
-		
-		  my $tmpLength=length($tmpAln[0]->{seq});
+      if ( $numGaps / $sliceLength > $maxGap ) {
+        $slice->[0] = undef;
 
-		  if (($numGaps0+$numGaps1)/$tmpLength>$maxGap){
-			$slice->[$i]=undef;
-			if ($verbose){
-			  my $ii=$i+1;
-			  print STDERR "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too many gaps.\n";
-			}
-		  }
-		}
-	  }
-	} else {
-	  for my $i (0..@$slice-1){
-		my $numGaps=($slice->[$i]->{seq}=~tr/-./-/);
-		if ($numGaps/$sliceLength>$maxGap){
-		  $slice->[$i]=undef;
-		  if ($verbose){
-			my $ii=$i+1;
-			print STDERR "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too many gaps.\n";
-		  }
-		}
-	  }
-	}
+        if ($verbose) {
+          print STDERR
+            "Alignment $alnCounter, window $windowCounter: Removing seq 1: too many gaps.\n";
+        }
+      } else {
 
-	for my $i (0..@$slice-1){
-	  next if not defined $slice->[$i];
-	  my $numMasked=($slice->[$i]->{seq}=~tr/a-z/a-z/);
-	  if ($numMasked/$sliceLength>$maxMasked){
-		$slice->[$i]=undef;
-		if ($verbose){
-		  my $ii=$i+1;
-		  print STDERR "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too many masked letters.\n";
-		}
-	  }
-	}
+        for my $i ( 1 .. @$slice - 1 ) {
 
-	for my $i (0..@$slice-1){
-	  next if not defined $slice->[$i];
-	  my $tmpSeq=$slice->[$i]->{seq};
-	  #print $tmpSeq, ":",rangeWarn([{seq=>$tmpSeq}]),"\n";
-	  my $warning=rangeWarn([{seq=>$tmpSeq}]);
-	  if ($warning){
-		$slice->[$i]=undef;
-		if ($verbose){
-		  my $ii=$i+1;
-		  if ($warning==1){
-			print STDERR "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too short.\n";
-		  }
-		  if ($warning==2){
-			print STDERR "Alignment $alnCounter, window $windowCounter: Removing seq $ii: base composition out of range.\n";
-		  }
-		  if ($warning==3){
-			print STDERR "Alignment $alnCounter, window $windowCounter: Removing seq $ii: base composition out of range/too short.\n";
-		  }
-		}
-	  }
-	}
-	
-	my @tmp;
-	foreach (@$slice){
-	  next if (!defined $_);
-	  push @tmp,$_;
-	}
-	$slice=\@tmp;
+          my @tmpAln = ( { seq => $slice->[0]->{seq} }, { seq => $slice->[$i]->{seq} } );
 
+          removeCommonGaps( \@tmpAln );
 
-	# Nothing left
-	if (!@$slice){
-	  if ($verbose){
-		print STDERR "Alignment $alnCounter discarded: No sequences left.\n";
-	  }
-	  goto SKIP;
-	}
+          my $numGaps0 = ( $tmpAln[0]->{seq} =~ tr/-./-/ );
+          my $numGaps1 = ( $tmpAln[1]->{seq} =~ tr/-./-/ );
 
-	# Reference sequence discarded
-	if (($refSeq) and ($slice->[0]->{name} ne $refName)){
-	  if ($verbose){
-		print STDERR "Alignment $alnCounter discarded: Reference sequence was discarded in previous filter steps.\n";
-	  }
-	  goto SKIP;
-	}
+          my $tmpLength = length( $tmpAln[0]->{seq} );
 
-	# Too few sequences
-	if (@$slice<$minN){
-	  if ($verbose){
-		print STDERR "Alignment $alnCounter discarded: Too few sequences left.\n";
-	  }
-	  goto SKIP;
-	}
+          if ( ( $numGaps0 + $numGaps1 ) / $tmpLength > $maxGap ) {
+            $slice->[$i] = undef;
+            if ($verbose) {
+              my $ii = $i + 1;
+              print STDERR
+                "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too many gaps.\n";
+            }
+          }
+        }
+      }
+    } else {
+      for my $i ( 0 .. @$slice - 1 ) {
+        my $numGaps = ( $slice->[$i]->{seq} =~ tr/-./-/ );
+        if ( $numGaps / $sliceLength > $maxGap ) {
+          $slice->[$i] = undef;
+          if ($verbose) {
+            my $ii = $i + 1;
+            print STDERR
+              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too many gaps.\n";
+          }
+        }
+      }
+    }
 
-	removeCommonGaps($slice);
+    for my $i ( 0 .. @$slice - 1 ) {
+      next if not defined $slice->[$i];
+      my $numMasked = ( $slice->[$i]->{seq} =~ tr/a-z/a-z/ );
+      if ( $numMasked / $sliceLength > $maxMasked ) {
+        $slice->[$i] = undef;
+        if ($verbose) {
+          my $ii = $i + 1;
+          print STDERR
+            "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too many masked letters.\n";
+        }
+      }
+    }
 
-	
-	if ($alnFormat eq "CLUSTAL"){
-		
-	  for my $i (0..@$slice-1){
-		$slice->[$i]->{start}=$sliceStart;
-		$slice->[$i]->{end}=$sliceEnd;
-		$slice->[$i]->{strand}='+';
-	  }
-	}
+    for my $i ( 0 .. @$slice - 1 ) {
+      next if not defined $slice->[$i];
+      my $tmpSeq = $slice->[$i]->{seq};
 
-	my $slices;
+      #print $tmpSeq, ":",rangeWarn([{seq=>$tmpSeq}]),"\n";
+      my $warning = rangeWarn( [ { seq => $tmpSeq } ] );
+      if ($warning) {
+        $slice->[$i] = undef;
+        if ($verbose) {
+          my $ii = $i + 1;
+          if ( $warning == 1 ) {
+            print STDERR
+              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too short.\n";
+          }
+          if ( $warning == 2 ) {
+            print STDERR
+              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: base composition out of range.\n";
+          }
+          if ( $warning == 3 ) {
+            print STDERR
+              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: base composition out of range/too short.\n";
+          }
+        }
+      }
+    }
 
-	if (@$slice > $maxN){
+    my @tmp;
+    foreach (@$slice) {
+      next if ( !defined $_ );
+      push @tmp, $_;
+    }
+    $slice = \@tmp;
 
-	  $slices=pruneAln(alnRef=>$slice,
-					  maxN=>$maxN,
-					  minN=>2,
-					  optSim=>$optID/100,
-					  maxID=>$maxID/100,
-					  numAln=>$numSamples,
-					  keepfirst=>$refSeq);
-	} else {
+    # Nothing left
+    if ( !@$slice ) {
+      if ($verbose) {
+        print STDERR "Alignment $alnCounter discarded: No sequences left.\n";
+      }
+      goto SKIP;
+    }
 
-	  $slices=[$slice];
+    # Reference sequence discarded
+    if ( ($refSeq) and ( $slice->[0]->{name} ne $refName ) ) {
+      if ($verbose) {
+        print STDERR
+          "Alignment $alnCounter discarded: Reference sequence was discarded in previous filter steps.\n";
+      }
+      goto SKIP;
+    }
 
-	}
+    # Too few sequences
+    if ( @$slice < $minN ) {
+      if ($verbose) {
+        print STDERR "Alignment $alnCounter discarded: Too few sequences left.\n";
+      }
+      goto SKIP;
+    }
 
-	foreach my $slice (@$slices){
+    removeCommonGaps($slice);
 
-	  if (length($slice->[0]->{seq})<$minLength){
-		if ($verbose){
-		  print STDERR "Alignment $alnCounter discarded: Too short.\n";
-		}
-		next;
-	  }
+    if ( $alnFormat eq "CLUSTAL" ) {
 
-	  if (meanPairID($slice)*100<$minID){
-		if ($verbose){
-		  print STDERR "Alignment $alnCounter discarded: Mean pairwise identity out of range.\n";
-		}
-		next;
-	  }
+      for my $i ( 0 .. @$slice - 1 ) {
+        $slice->[$i]->{start}  = $sliceStart;
+        $slice->[$i]->{end}    = $sliceEnd;
+        $slice->[$i]->{strand} = '+';
+      }
+    }
 
+    my $slices;
 
-	  my @strands=();
-	
-	  push @strands,'+' if $forwardStrand;
-	  push @strands,'-' if $reverseStrand;
-	
-	  @strands=('+','-') if $bothStrands;
-	
-	  foreach my $strand (@strands){
+    if ( @$slice > $maxN ) {
 
-		if ($strand eq '-'){
-		  $slice=revAln($slice);
-		}
+      $slices = pruneAln(
+        alnRef    => $slice,
+        maxN      => $maxN,
+        minN      => 2,
+        optSim    => $optID / 100,
+        maxID     => $maxID / 100,
+        numAln    => $numSamples,
+        keepfirst => $refSeq
+      );
+    } else {
 
-	  #print "\n\nAFTER:\n\n";
+      $slices = [$slice];
 
-		print formatAln($slice,$alnFormat);
-	  }
-	}
-	
+    }
+
+    foreach my $slice (@$slices) {
+
+      if ( length( $slice->[0]->{seq} ) < $minLength ) {
+        if ($verbose) {
+          print STDERR "Alignment $alnCounter discarded: Too short.\n";
+        }
+        next;
+      }
+
+      if ( meanPairID($slice) * 100 < $minID ) {
+        if ($verbose) {
+          print STDERR "Alignment $alnCounter discarded: Mean pairwise identity out of range.\n";
+        }
+        next;
+      }
+
+      my @strands = ();
+
+      push @strands, '+' if $forwardStrand;
+      push @strands, '-' if $reverseStrand;
+
+      @strands = ( '+', '-' ) if $bothStrands;
+
+      foreach my $strand (@strands) {
+
+        if ( $strand eq '-' ) {
+          $slice = revAln($slice);
+        }
+
+        #print "\n\nAFTER:\n\n";
+
+        print formatAln( $slice, $alnFormat );
+      }
+    }
+
   SKIP:
-	$prevSliceStart=$sliceStart;
-	$sliceStart+=$slide;
-	  last if ($sliceEnd==$length);
-   }
+    $prevSliceStart = $sliceStart;
+    $sliceStart += $slide;
+    last if ( $sliceEnd == $length );
+  }
 }
 
 __END__
