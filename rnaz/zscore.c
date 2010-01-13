@@ -451,9 +451,9 @@ void predict_values(const char *seq, double *avg, double *stdv, int *type,
   double *di_array = (double*) space(sizeof(double) * 16);
   unsigned int length = strlen(seq);
   double GplusC,AT_ratio,CG_ratio;
-  char tmp[10];
+  char tmp[20];
   int verbose;
-  verbose = 1; /* set to 1 to get out of range warnings. */
+  verbose = 0; /* set to 1 to get out of range warnings. */
 
   /* count base frequencies */
   /* was allocated with space, which makes a calloc */
@@ -732,8 +732,18 @@ void predict_values(const char *seq, double *avg, double *stdv, int *type,
 
   /*printf("Type: %d\n", *type);*/
   /* now we have to see if user allowed explicite shuffling */
-  if (*type == 1 && (length >= 50 && length <= 400 && avoid_shuffle)) *type = 0; /* mono */
-  if (*type == 3 && (length >= 50 && length <= 400 && avoid_shuffle)) *type = 2; /* di */
+  /*if (*type == 1 && (length >= 50 && length <= 400 || avoid_shuffle)) *type = 0;*/ /* mono */
+  /*if (*type == 3 && (length >= 50 && length <= 400 || avoid_shuffle)) *type = 2;*/ /* di */
+  if (*type == 1 && avoid_shuffle) { /* mono */
+    strcpy(warning_string," WARNING: Out of training range. z-scores are NOT reliable.\n");
+    warning_string+=strlen(warning_string);
+    *type = 0; 
+  }
+  if (*type == 3 && avoid_shuffle) { /* di */
+    strcpy(warning_string," WARNING: Out of training range. z-scores are NOT reliable.\n");
+    warning_string+=strlen(warning_string);
+    *type = 2;
+  }
 
   /*********************************************/
   /* now we DEFINITELY know which type to take */
@@ -801,7 +811,7 @@ void predict_values(const char *seq, double *avg, double *stdv, int *type,
     node_di[20].index =-1;
 
     /* Now we have to fetch the right model and calculate avg and stdv*/
-  
+ 
     if (GplusC >= 0.200 && GplusC < 0.300) {
       if (GC20_30_avg == NULL || GC20_30_stdv == NULL)
       {
@@ -958,7 +968,8 @@ double mfe_zscore(const char *seq, double mfe, int *type, int avoid_shuffle,
     predict_values(seq, &avg, &stdv, type, avoid_shuffle, warning_string);
   }
 
-  if ( stdv == 0.0) {
+  /* If stdv is close to zero, we set the z-score by definition to zero.*/
+  if ( stdv < 0.00001) {
     return 0.0;
   }
 
