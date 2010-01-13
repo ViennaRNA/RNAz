@@ -354,7 +354,7 @@ void zscore_explicitly_shuffled(const char *seq, double *avg, double *stdv, int 
     srand((unsigned)time(NULL));
     strcpy(tmp, seq);
 
-    printf("INHERE\n");
+    /*printf("INHERE\n");*/
     
     for (counter = 0; counter < n; counter++)
     {
@@ -453,7 +453,7 @@ void predict_values(const char *seq, double *avg, double *stdv, int *type,
   double GplusC,AT_ratio,CG_ratio;
   char tmp[10];
   int verbose;
-  verbose = 0; /* set to 1 to get out of range warnings. */
+  verbose = 1; /* set to 1 to get out of range warnings. */
 
   /* count base frequencies */
   /* was allocated with space, which makes a calloc */
@@ -730,11 +730,11 @@ void predict_values(const char *seq, double *avg, double *stdv, int *type,
     } 
   }
 
-  //printf("Type: %d\n", *type);
+  /*printf("Type: %d\n", *type);*/
   /* now we have to see if user allowed explicite shuffling */
-  if (*type == 1 && (length >= 50 || length <= 400 || avoid_shuffle)) *type = 0; /* mono */
-  if (*type == 3 && (length >= 50 || length <= 400 || avoid_shuffle)) *type = 2; /* di */
-  
+  if (*type == 1 && (length >= 50 && length <= 400 && avoid_shuffle)) *type = 0; /* mono */
+  if (*type == 3 && (length >= 50 && length <= 400 && avoid_shuffle)) *type = 2; /* di */
+
   /*********************************************/
   /* now we DEFINITELY know which type to take */
 
@@ -917,7 +917,7 @@ void predict_values(const char *seq, double *avg, double *stdv, int *type,
   if (*type == 3) {
     zscore_explicitly_shuffled(seq, avg, stdv, *type);
   }
-
+  
   free(mono_array);
   free(di_array);
   
@@ -938,14 +938,11 @@ double mfe_zscore(const char *seq, double mfe, int *type, int avoid_shuffle,
   char *struc;
 
   if (mfe>0){
-  
 	struc = space(strlen(seq)+1);
 	E = fold(seq, struc);
 	free(struc);
   } else {
-
 	E=mfe;
-	
   }
   
   avg = 0.0;
@@ -959,6 +956,10 @@ double mfe_zscore(const char *seq, double mfe, int *type, int avoid_shuffle,
     if (*type == 2) *type = 3;
     if (*type == 0) *type = 1;
     predict_values(seq, &avg, &stdv, type, avoid_shuffle, warning_string);
+  }
+
+  if ( stdv == 0.0) {
+    return 0.0;
   }
 
   /*printf("%f,%f\n",avg,stdv);*/

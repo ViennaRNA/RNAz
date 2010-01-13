@@ -272,7 +272,7 @@ int main(int argc, char *argv[])
 	  sumMFE=0.0;
 	  GC=0.0;
 
-	  output=(char *)space(sizeof(char)*(length+16)*(n_seq+1)*3);
+	  output=(char *)space(sizeof(char)*(length+160)*(n_seq+1)*3);
 
 	  strcpy(warningString,"");
 	  strcpy(warningString_regression,"");
