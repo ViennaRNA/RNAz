@@ -25,11 +25,6 @@ only the forward direction as given in the input alignment is scored.
 Stores the output in a file. By default the output is printed to the
 standard output.
 
-=item B<-w> START-STOP, B<--window>=START-STOP
-
-Scores a sub-region of the alignment starting with column START up to
-column STOP.
-
 =item B<-p> X, B<--cutoff>=X
 
 Only show results with RNA class probability P > X. (Default: 0.5)
@@ -39,10 +34,26 @@ Only show results with RNA class probability P > X. (Default: 0.5)
 Print the output including gaps. Useful if the alignment wants to be
 recovered from the RNAz output. (Default: off)
 
-=item B<-s>, B<--predict-strand>
+=item B<-m>, B<--mononucleotide>
 
-Experimental feature which scores both strands and gives you a guess which
-direction is more likely to encode a structural RNA. (Default: off)
+=item B<-d>, B<--dinucleotide>
+
+Background model used to calculate z-scores. Default is dinucleotide
+content. Setting this option to mononucleotide will use the same
+models used RNAz 1.0 and prior versions. 
+
+=item B<-n>, B<--no-shuffle>
+
+If a z-score cannot be calculated efficiently because sequence
+characteristics are out of range (i.e. base composition too biased or
+sequence too short), RNAz will use a slow empirical shuffling
+procedure to determine the z-score. This can slow down screens
+considerably and can be turned off with this option.
+
+=item B<-l>, B<--locarnate>
+
+Assumes input alignments to be structurally aligned using LocaRNA
+(experimental feature).
 
 =item B<-V>, B<--version>
 
@@ -74,7 +85,9 @@ Please refer to the files README and manual.pdf for full documentation.
 
 =head1 AUTHORS
 
-Stefan Washietl <wash@tbi.univie.ac.at>
+Stefan Washietl <wash@mit.edu>
+
+Andreas Gruber <agruber@tbi.univie.ac.at>
 
 Ivo Hofacker <ivo@tbi.univie.ac.at>
 

@@ -1,4 +1,4 @@
-AC_INIT(RNAz, 2.0, wash@mit.edu, RNAz)
+AC_INIT(RNAz, 2.1, wash@mit.edu, RNAz)
 AM_INIT_AUTOMAKE
 
 AC_PROG_CC

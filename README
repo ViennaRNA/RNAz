@@ -1,4 +1,4 @@
-RNAz  1.0
+RNAz  2.1
 ============
 
 Content
@@ -138,16 +138,17 @@ RNAz [options] [filename]
 RNAz takes an alignment file in the ClustalW or MAF format. Available
 command line options:
 
-  -h, --help              Print help and exit
-  -V, --version           Print version and exit
   -f, --forward           Score forward strand
   -r, --reverse           Score reverse strand
   -b, --both-strands      Score both strands
   -o, --outfile=FILENAME  Output filename
-  -w, --window=START-STOP Score window from START to STOP
   -p, --cutoff=FLOAT      Probability cutoff
-  -g, --show-gaps         Display alignment with gap  (default=off)
-  -s, --predict-strand    Use strand predictor  (default=off)
+  -d, --dinucleotide      Use dinucleotide shuffled z-scores (default)
+  -m, --mononucleotide    Use mononucleotide shuffled z-scores (default)
+  -l, --locarnate         Use decision model for structural alignments (default=off)
+  -n, --no-shuffle        Never fall back to shuffling (default=off)
+  -h, --help              Print help screen
+  -V, --version           Show version information
 
 
 You can test RNAz on one of the example alignments (installed 
@@ -165,28 +166,53 @@ Please refer to the following commented sample output:
 
 Header:
 
-############################  RNAz 1.0 ###############################
- 
- Sequences: 4 <- Number of sequences in the alignment
- Columns: 74  <- Columns of the alignments
- Reading direction: reverse <- Strand considered for calculation 
-                    ("forward" or "reverse")
- Mean pairwise identity:  74.38 <- in percent
- Mean single sequence MFE: -33.10 <- average RNAfold MFE in kcal/Mol
- Consensus MFE: -30.98 <- consensus MFE calculated by RNAalifold
- Energy contribution: -27.72 <- RNAalifold energy part
- Covariance contribution:  -3.25 <- RNAalifold covariance part
- Combinations/Pair:   1.64 <- Number of different base pair combination
+############################  RNAz 2.1  ##############################
+
+Sequences: 4 ... Number of sequences in the alignment
+Columns: 73  ... Number of columns of the alignment
+Reading direction: forward ... Strand considered for calculation 
+                                ("forward" or "reverse")
+Mean pairwise identity:  80.82 ... Mean pairwise sequence identity in %
+Shannon entropy: 0.31118 ... Metric for sequence diversity taking into 
+                             accout also number of sequences
+G+C content: 0.54795 ... GC-content
+Mean single sequence MFE: -27.20 ... Average mean pairwise identity of 
+Consensus MFE: -26.50 ... consensus MFE calculated by RNAalifold
+Energy contribution: -23.63 ... RNAalifold energy part
+Covariance contribution:  -2.87 ... RNAalifold covariance part
+Combinations/Pair:   1.43 ... Number of different base pair combination
                               per predicted consensus base-pair
- Mean z-score:  -2.68 
- Structure conservation index:   0.94
- SVM decision value:   3.87  <- Internal decision value, probably 
-                                not of much interest...
- SVM RNA-class probability: 0.999672 <- Probability estimate for the
-                                        decision value, "RNAz P-value"
- Prediction: RNA <- "RNA" if P>=0.5 else "OTHER"
- 
+Mean z-score:  -1.82
+Structure conservation index:   0.97
+Background model: dinucleotide ... Type of background model (di- or
+                                   mononucleotide) used to calculate
+                                   z-score
+Decision model: sequence based alignment quality  ... see --locarnate 
+                                                      option
+SVM decision value:   2.15 ... Internal decision value, probably 
+                               not of much interest...
+SVM RNA-class probability: 0.984068  <- Probability estimate for the
+                                        classification, "RNAz P-value"
+Prediction: RNA  ... "RNA" if P>=0.5 else "OTHER"
+
 ######################################################################
+
+>sacCer1
+GCCUUGUUGGCGCAAUCGGUAGCGCGUAUGACUCUUAAUCAUAAGGUUAGGGGUUCGAGCCCCCUACAGGGCU
+(((((((.(((((........))))...((((.((((....))))))))(((((....)))))).))))))). ( -29.20, z-score =  -2.35, R)
+>sacBay
+GCCUUGUUGGCGCAAUCGGUAGCGCGUAUGACUCUUAAUCAUAAGGUUAGGGGUUCGAGCCCCCUACAGGGCU
+(((((((.(((((........))))...((((.((((....))))))))(((((....)))))).))))))). ( -29.20, z-score =  -2.35, R)
+>sacKlu
+GCCUUGUUGGCGCAAUCGGUAGCGCGUAUGACUCUUAAUCAUAAGGCUAGGGGUUCGAGCCCCCUACAGGGCU
+(((((((.(((((........)))).(((((.......)))))......(((((....)))))).))))))). ( -27.20, z-score =  -1.34, R)
+>sacCas
+GCUUCAGUAGCUCAGUCGGAAGAGCGUCAGUCUCAUAAUCUGAAGGUCGAGAGUUCGAACCUCCCCUGGAGCA
+(((((((..((((........)))).((((.........))))((((((......)).))))...))))))). ( -23.20, z-score =  -1.22, R)
+>consensus
+GCCUUGUUGGCGCAAUCGGUAGCGCGUAUGACUCUUAAUCAUAAGGUUAGGGGUUCGAGCCCCCUACAGGGCU
+(((((((..((((........)))).(((((.......))))).....(((((.......)))))))))))). (-26.50 = -23.63 +  -2.87) 
+
 
 Secondary structure predictions:
 
@@ -195,50 +221,40 @@ following format:
 
 >sequence name
 SEQUENCE
-STRUCTURE (MFE)
+STRUCTURE (MFE, Z-SCORE, R|S)
 
-The structure is indicated in dot bracket notation: '.' denotes a unpaired
-base, while '(' and ')' denote base pairs.
+The structure is indicated in dot bracket notation: '.' denotes a
+unpaired base, while '(' and ')' denote base pairs. Energies are given
+in kcal/Mol.  "R" means z-score was calculated by regression. "S"
+means z-score was estimated by shuffling.
 
 The last structure is the RNAalifold consensus structure with the consensus
 MFE (broken down in energy and covariance contribution)
 
->AF041468.1
-GGGGGUAUAGCUCAGUUGGUAGAGCGCUGCCUUUGCACGGCAGAUGUCAGGGGUUCGAGUCCCCUUACCUCCA
-(((((((..((((........)))).(((((.......))))).....(((((.......)))))))))))). ( -31.60)
->X54300
-GGGGGUAUAGCUUAGUUGGUAGAGCGCUGCUUUUGCAAGGCAGAUGUCAGCGGUUCGAAUCCGCUUACCUCCA
-(((((((..((((.((.(((((....)))))...)).)))).......(((((.......)))))))))))). ( -27.90)
->L00194
-GGGGCCAUAGCUCAGUUGGUAGAGCGCCUGCUUUGCAAGCAGGUGUCGUCGGUUCGAAUCCGUCUGGCUCCA
-(((((((..((((........))))(((((((.....)))))))...(.(((.......))).)))))))). ( -32.50)
->AY017179
-GGGCCGGUAGCUCAGCCUGGGAGAGCGUCGGCUUUGCAAGCCGAAGGCCCCGGGUUCGAAUCCCGGCCGGUCCA
-((((((((...((((((((((...((.((((((.....))))))..)))))))))).))......)))))))). ( -40.40)
->consensus
-GGGGCUAUAGCUCAGU_UGGUAGAGCGCCGCCUUUGCAAGGCAGAUGUCAGCGGUUCGAAUCCCCUUACCUCCA
-(((((((..((((.........)))).((((((.....)))))).....(((((.......)))))))))))). (-30.98 = -27.72 +  -3.25)
+7. Advanced usage
+=================
+
+See the Manual (manual.pdf) for more detailed documentation.
 
 
-6. Citing RNAz
+8. Citing RNAz
 ==============
 
 If you use RNAz in your work please cite:
+
+Gruber AR, Findeiss, Washietl S, Hofacker IL, and Stadler PF. 
+RNAz 2.0: Improved noncoding rna detection. 
+Pac Symp Biocomput, 2010. 15:69–79.
+
+or
 
 Washietl S, Hofacker IL, Stadler PF
 Fast and reliable prediction of noncoding RNAs.
 Proc Natl Acad Sci U S A. 102(7):2454-9 (2005)
 
 
-6. Contact
+9. Contact
 ==========
 
-Please feel free to contact the author for bug-reports, feature-requests,
-suggestions etc. Of course I also look forward to hearing from you if you
-discoverd something biologically interesting using RNAz. 
-
 Stefan Washietl <wash@tbi.univie.ac.at>
-
---
-$Id: README,v 1.5 2006/10/12 16:40:24 wash Exp $
 

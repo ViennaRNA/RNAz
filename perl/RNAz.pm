@@ -9,7 +9,7 @@ our @ISA = qw(Exporter);
 
 our @EXPORT_OK = ();
 
-our $rnazVersion='1.0';
+our $rnazVersion='2.1';
 
 our @EXPORT = qw(checkFormat
 				 getNextAln
@@ -1153,8 +1153,8 @@ sub getSeq{
 
   close(SEQFILE);
   if ($strand eq "-"){
-	$seq=reverse $seq;
-	$seq=~tr/AGCTUagctu/TCGAAtcgaat/;
+    $seq=reverse $seq;
+    $seq=~tr/AGCTUagctu/TCGAAtcgaa/;
   }
   return $seq;
 }

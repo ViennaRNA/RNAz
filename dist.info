@@ -1,34 +1,17 @@
 1. Checkout the package
 
-2. Run init-autotools.sh
+2. Run autogen.sh
 
 3. Copy the libsvm-2.8.tar.gz into the package and untar it. If a new
    libsvm verion should be used, change the paths in the rnaz/Makefile.am
 
-4. Generate manual: change in doc, run makedoc.pl, TeX the manual.tex to a
-   pdf and copy manual.pdf into the root directory of the package
+4. Generate manual: change in doc, run makedoc.pl
 
-5. Generate RNAz man-page using "pod2man RNAz.pod > RNAz.1" in man directory
+5. Adjust the version numbers in configure.ac, perl/RNAz.pm
 
-6. Adjust the version numbers in configure.ac, perl/RNAz.pm
+6. Update README, NEWS, TODO
 
-7. Update README, NEWS, TODO
+7. Update Website. If documentation has changed don't forget HTML documentation.    
 
-9. Run  cvs2cl.pl which creates the ChanceLog file automatically.
-
-10. Create a tag in CVS:  cvs tag -R rel-1-0
-
-11. make dist
-
-12. Copy tarball to win-RNAz dir and untar it. Cross compile it using 
-    ../cross-configure.sh and ../cross-make.sh
-
-13. Under Windows: Open "Advanced Installer Package" RNAz.aip and add updated
-    files. Make the MSI installer package.
-
-14. Update Website. If documentation has changed don't forget HTML documentation.    
-
---
-$Id: dist.info,v 1.4 2008-01-24 10:53:10 wash Exp $
 
 

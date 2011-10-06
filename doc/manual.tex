@@ -1,5 +1,3 @@
-% Time-stamp: <06/03/24 18:52:45 wash>
-
 \documentclass[11pt]{article}
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -59,7 +57,7 @@
 \huge 
 \sf
 
-RNAz 1.0
+RNAz 2.1
 
 \vspace*{-0.8cm}
 \rule{\textwidth}{1mm}
@@ -72,31 +70,17 @@ RNAz 1.0
 
 \vfill
 
-%\begin{center}
 Stefan Washietl\\Department for Theoretical
 Chemistry\\University Vienna
 
 wash@tbi.univie.ac.at\\
 http://www.tbi.univie.ac.at/\raisebox{-0.9ex}{\~{ }}wash/RNAz
 
-%\end{center}
 \normalfont
 
 \newpage
-\thispagestyle{empty}
-\vspace*{0.9\textheight}
-
-\begin{center}
-  \$Id: manual.tex,v 1.2 2006/03/24 17:56:08 wash Exp $\ $\$
-\end{center}
-
-
-\newpage
-
 \pagenumbering{roman}
-
 \tableofcontents
-
 \newpage
 
 
@@ -107,25 +91,34 @@ structure. RNAz detects evolutionary conserved and thermodynamically stable
 RNA secondary structures in multiple sequence alignments and thus
 efficiently filters for candidate ncRNAs.
 
-There are two main goals of this document. First we want to give you
-detailed technical advice on how to use RNAz. Second, we want to help you
-to get a well-founded understanding of the results you get from RNAz. We
-want to assist in a sensible interpretation of RNAz predictions ---
-leading, as we hope, to reasonable conclusions for your application.
+There are two main goals of this document. First, it should give
+detailed technical advice on how to use RNAz. Second, it should help
+you to get a well-founded understanding of the results you get from
+RNA leading to reasonable conclusions for your application.
 
-This document is largely based on a draft for a book chapter and it is thus
-organized in an idiosyncratic way. Until there is more time to write a
-dedicated tutorial and manual we will keep this organization.
+This document is largely based on a draft for a book chapter and it is
+thus organized in an idiosyncratic way. Until there is more time to
+write a dedicated tutorial and manual I will keep this organization.
 
-We start with a short introduction to the problem of \emph{de novo}
-prediction of ncRNAs and the RNAz algorithm. In the next part, we explain
-how to install RNAz and all necessary helper programs on your system. Next,
-we demonstrate the basic usage of RNAz including the correct formatting of
-the input alignments. More advanced techniques which require pre-processing
-steps of the input alignments are discussed afterwards. In the last
-section, we show you how to conduct a RNAz screen of a large number of
-automatically generated alignments on the example of genome-wide screen of
-\emph{Saccharomyces cerevisiae}.
+I start with a short introduction to the problem of \emph{de novo}
+prediction of ncRNAs and the RNAz algorithm. In the next part, I will
+explain how to install RNAz and all necessary helper programs on your
+system. Next, I demonstrate the basic usage of RNAz including the
+correct formatting of the input alignments. More advanced techniques
+which require pre-processing steps of the input alignments are
+discussed afterwards. In the last section, I show how to conduct a
+RNAz screen of a large number of automatically generated alignments on
+the example of genome-wide screen of \emph{Saccharomyces cerevisiae}.
+
+The theory behind RNAz is described in more detail in reference
+\cite{washietl05a}. Improvements made in version 2.0 are described in
+reference \cite{Gruber:2010}. If you are interested in RNAz for the
+purpose of annotating noncoding RNAs, our new program RNAcode
+\cite{Findeiss:2011} might be of interest. It was developed to be used
+in combination with RNAz and evaluates the protein coding potential of
+candidate ncRNAs.
+
+\hfill Stefan Washietl
 
 
 \newpage
@@ -267,9 +260,7 @@ If available, we recommend to use a Linux/UNIX system for your analysis.
 Also Mac OS X, in principle a full featured UNIX system, is an adaequate
 platform.
 
-Alternatively, you can run RNAz also on Microsoft Windows.  Most of the
-methods described in this manual can be carried out on Windows without any
-modification.
+\emph{Note}: We have discontinued the Windows version of RNAz as of version 2.0
 
 
 \subsection{Perl}
@@ -280,20 +271,12 @@ which are written in the Perl programming language. To run these programs
 you need to have installed Perl on your system, which is most likely the
 case on all Linux/UNIX systems and on Mac OS X.
  
-Perl is not part of a standard Windows system. Windows users can download it
-from \url{www.activestate.com}. Choose the latest ActivePerl MSI installer
-package for Windows and simply follow the installation instructions. Make
-sure that you have selected the ``Add Perl to the PATH environment
-variable'' and ``Create Perl file extension association'' options during
-installation.
-
 \subsection{RNAz}
 
 The RNAz program can be downloaded from:
 \url{www.tbi.univie.ac.at/~wash/RNAz}. For the examples in this manual,
 RNAz version 1.0 was used. For Linux/UNIX and OS X, download the file
-\texttt{RNAz-1.0.tar.gz}. Windows user download the file
-\texttt{RNAz-1.0-win32.msi}.
+\texttt{RNAz-2.0.tar.gz}. 
 
 \subsection{Optional software}
 \label{sec:optional-software}
@@ -309,7 +292,6 @@ To create HTML formatted output of the results as described in section
 
 To perform automatic database searches of predicted ncRNA candidates you
 need NCBI Blast (\url{ftp://ftp.ncbi.nih.gov/blast}).
-
 
 \subsection{Example files}
 
@@ -350,71 +332,69 @@ the Perl programs to an existing directory already in your \texttt{PATH}.
 In case you are not familiar on how to run Perl programs refer to
 note~\ref{sec:inst-runn-perl}.
 
-\subsubsection{Microsoft Windows}
-\label{sec:microsoft-windows}
-
-To install RNAz on Windows simply double click on the
-\texttt{RNAz-1.0-win32.msi} and follow the instructions. Open a console
-window and type \texttt{RNAz --version} to test your installation.
-
 \subsection{Installation of optional Software}
 \label{sec:inst-opti-softw}
 
 We cannot cover in detail the installation procedure of the optional
-software. We just give an outline how to install the Vienna RNA package and
-NCBI blast on a standard Linux system. Together with an existing
-Ghostscript installation, this will allow you to run the examples in
-sections \ref{sec:website} and \ref{sec:blast}. Windows and OS X users see
-Note~\ref{sec:opti-softw-wind}.
+software. We just give an outline how to install the Vienna RNA
+package and NCBI blast on a standard Linux system. Together with an
+existing Ghostscript installation, this will allow you to run the
+examples in sections \ref{sec:website} and \ref{sec:blast}. 
 
 To install the Vienna RNA package, get the latest
-\texttt{ViennaRNA-X.X.tar.gz} file from \url{www.tbi.univie.ac.at/RNA}. The
-package can be installed in exactly the same way as RNAz, using
-\texttt{./configure} and \texttt{make}. Please refer to the
-\texttt{INSTALL} document for detailed installation options. Make sure that
-the Perl programs in the \texttt{Utils} directory are in your \texttt{PATH}
-of executables.
+\texttt{ViennaRNA-X.X.tar.gz} file from
+\url{www.tbi.univie.ac.at/RNA}. The package can be installed in
+exactly the same way as RNAz, using \texttt{./configure} and
+\texttt{make}. Please refer to the \texttt{INSTALL} document for
+detailed installation options. Make sure that the Perl programs in the
+\texttt{Utils} directory are in your \texttt{PATH} of executables.
 
 To install NCBI Blast download the \texttt{blast-2.*.tar.gz}-package
 matching your platform from
 \url{ftp://ftp.ncbi.nih.gov/blast/executables/LATEST/}. Copy it to an
-installation directory of your choice and ``untar'' it. The executables are
-located in the \texttt{bin} subdirectory which you should add to your
-\texttt{PATH} variable.
+installation directory of your choice and ``untar'' it. The
+executables are located in the \texttt{bin} subdirectory which you
+should add to your \texttt{PATH} variable.
+
+You can install the Vienna RNA package and NCBI Blast without problems
+on OS X by following the instructions above. However, unlike on a
+Linux system, Ghostscript is not installed per default. You can try to
+get a pre-compiled package from \url{fink.sourceforge.net} or
+\url{darwinports.opendarwin.org}.  Alternatively, you can download the
+source from \url{http://www.ghostscript.com/} and build the package
+with \texttt{./configure} and \texttt{make}.
 
 \subsection{Installation of example files}
 
-Move the example file \texttt{yeast-examples.tar.gz} to a directory of your
-choice and ``untar'' the file:
+Move the example file \texttt{yeast-examples.tar.gz} to a directory of
+your choice and ``untar'' the file:
 
 \begin{verbatim}
 # tar -xzf yeast-examples.tar.gz
 \end{verbatim}
 
-If you are using Windows, download the file \texttt{yeast-examples.zip} and
-unzip it in a directory of your choice.
-
 \subsection{Basic usage of RNAz}
 
 \subsubsection{Input alignment}
 
-RNAz takes a multiple sequence alignment as input. RNAz does \emph{not}
-align sequences, so you have to use other programs for creating your
-alignments. If you prepare your alignments manually (in contrast to
-automatic genome-wide alignments as in
+RNAz takes a multiple sequence alignment as input. RNAz does
+\emph{not} align sequences, so you have to use other programs for
+creating your alignments. If you prepare your alignments manually (in
+contrast to automatic genome-wide alignments as in
 section~\ref{sec:large-scale-genomic}) we recommend using Clustal W
-\cite{thompson94}. It is an easy-to-use and widely available tool which
-performs well on structural RNAs \cite{gardner05}. For hints on preparing
-the alignments see note~\ref{sec:creat-input-alignm}.
+\cite{thompson94}. It is an easy-to-use and widely available tool
+which performs well on structural RNAs \cite{gardner05}. For hints on
+preparing the alignments see note~\ref{sec:creat-input-alignm}.
 
 RNAz can read two different alignment formats: Clustal W
-(Fig.~\ref{fig:formats}A) and MAF (Fig.~\ref{fig:formats}B). The Clustal W
-format is a concise format which is supported by many programs and thus
-suitable for every-day use.
+(Fig.~\ref{fig:formats}A) and MAF (Fig.~\ref{fig:formats}B). The
+Clustal W format is a concise format which is supported by many
+programs and thus suitable for every-day use.
 
-For genomic screens, however, it is necessary to exactly store the genomic
-locations of aligned sequences. For this purpose, the MAF format was
-developed which requires six fields for each sequence entry:
+For genomic screens, however, it is necessary to exactly store the
+genomic locations of aligned sequences. For this purpose, the MAF
+format was developed which requires six fields for each sequence
+entry:
 
 \begin{enumerate}
 
@@ -522,71 +502,57 @@ single sequence and a consensus structure prediction for the whole
 alignment. The predicted structures are given below the sequences in a
 ``dot-bracket'' notation. Each base-pair in the secondary structure is
 indicated by a pair of brackets: ``\texttt{(}'' and ``\texttt{)}''.
-Unpaired bases are shown as dot: ``\texttt{.}''. Next to the structure you
-see the MFE in kcal/Mol. You can get a graphical output by using RNAalifold
-of the ViennaRNA package.
+Unpaired bases are shown as dot: ``\texttt{.}''. Next to the structure
+you see the MFE in kcal/Mol. You can get a graphical output by using
+RNAalifold of the ViennaRNA package.
+
+\textbf{New in version 2.0} Originally RNAz assumed the random
+background for the $z$-score calculations to have a given
+\emph{mono}nucleotide content. As of version 2.0 RNAz uses a different
+background model that also considers the \emph{di}nucleotide
+content. The new model is usually preferable and the default. However,
+with the option ``\texttt{--mononcleotide}'' the original
+mononucleotide model of RNAz 1.0 still can be used.
+
+In some cases, the sequences in the input data is not suitable to
+calculate a z-score (e.g. sequence composition is outside an
+acceptable range of values). RNAz prior to 2.0 showed a warning that
+the $z$-score calculation might be not accurate.  As of RNAz 2.0 the
+$z$-score can be calculated empirically by shuffling the
+sequences. The output of RNAz now shows for each sequence the
+$z$-score and how it was calculated (``R'' stands regression which is
+default, and ``S'' stands for shuffling, the fallback if the
+regression is not possible). The downside of the shuffling approach is
+that it is extremely slow and can delay a screen considerably even if
+only some sequences are out of range.  For most applications it is
+acceptable to use the faster regression calculation anyway even some
+values may be off. Use the option ``\texttt{--no-shuffle}'' to never
+fall-back to the slow shuffling approach.
+
+
+
+
+
 
 \subsection{Advanced usage of RNAz}
 
 \subsubsection{Analyzing forward and reverse strand}
 
-For a given alignment, a putative RNA can either be read in the forward
-direction or in the reverse complementary direction. Therefore, both
-reading directions should be scanned. By default, only the forward
-direction is scored, but you can use the \texttt{--forward},
-\texttt{--reverse} and \texttt{--both-strands} flags to explicitely specify the
-reading direction. 
+If no prior knowledge on transcription is available, a putative RNA
+can either be read in the forward direction or in the reverse
+complementary direction. In that case, both reading directions should
+be scanned. By default, only the forward direction is scored, but you
+can use the \texttt{--forward}, \texttt{--reverse} and
+\texttt{--both-strands} flags to explicitely specify the reading
+direction.
 
-If you have a strong RNA signal in one strand you can observe in many cases
-also a signal in the reverse complement.  Usually the signals (SCI,
-$z$-score, consensus MFE) are stronger in the ``correct'' direction. In
-most cases this also goes along with a better $P$ value.  That is not
-always the case and, therefore, RNAz uses a separate SVM decision model to
-predict the correct strand. Please note, that in version 1.0 this is still
-an experimental feature. With the following command you can analyze both
-strands of the tRNA and, in addition, activate the strand prediction:
-
-\begin{verbatim}
-# RNAz --both-strands --predict-strand tRNA.maf
-\end{verbatim}
-
-In this example, the signal from both strands are almost indistinguishable
-and also the $P$-values are almost the same (0.993 and 0.999).
-RNAz still suggests the correct (forward) strand and displays a
-``strand class probability'':
-
-\begin{verbatim}
-# Strand winner: forward (0.88)
-\end{verbatim}
-
-\subsubsection{Scoring alignments with more than six sequences}
-\label{sec:scor-large-alignm}
-
-RNAz is currently limited to alignments with not more than six sequences.
-If you have more than six sequences in your alignment, you have to reduce
-the number either manually or use the \texttt{rnazSelectSeqs.pl} program to
-filter your alignment before you put it into RNAz:
-
-\begin{verbatim}
-# rnazSelectSeqs.pl miRNA.maf | RNAz
-\end{verbatim}
-
-The file \texttt{miRNA.maf} contains 12 aligned microRNAs. With default
-parameters,\\ \texttt{rnazSelectSeqs.pl} selects a subset of six sequences
-trying to reach an optimal mean pairwise identity around 80\%.
-
-The default behaviour can be customized in various ways (use
-\texttt{--help} for details). The following command, for example, samples
-three different alignments with four sequences each.
-
-\begin{verbatim}
-# rnazSelectSeqs.pl --num-seqs=4 --num-samples=3 miRNA.maf | RNAz
-\end{verbatim}
-
-By default, the first sequence in the alignment is always in the set of
-selected sequences. This is the desired behaviour for genomic screens,
-where one usually likes to retain a reference sequence.
-
+If you have a strong RNA signal in one strand you can observe in many
+cases also a signal in the reverse complement.  Usually the signals
+(SCI, $z$-score, consensus MFE) are stronger in the ``correct''
+direction. In most cases this also goes along with a better $P$
+value. However, this is not always so care must be taken when
+interpreting a RNAz result on data for which the reading direction is
+not known.
 
 \subsubsection{Scoring long alignments}
 \label{sec:scor-long-alignm}
@@ -613,79 +579,148 @@ to get a quick overview on the results. The \texttt{rnazWindow.pl} program
 has numerous additional functions and will be used again in section
 \ref{sec:large-scale-genomic}.
 
+\subsubsection{Selecting subsets of sequences}
+\label{sec:scor-large-alignm}
+
+RNAz up to version 1.0 was limited to alignments of at most 6
+sequences. As of version 2.0, there is no limit on the maximum number
+of sequences. However, under some cirumstances (e.g. for very large
+alignments) it is still useful to reduce the number of sequences prior
+to running RNAz.
+
+You can select an optimal subset of sequences using
+\texttt{rnazSelectSeqs.pl} before you put it into RNAz:
+
+\begin{verbatim}
+# rnazSelectSeqs.pl -n 5 miRNA.maf | RNAz
+\end{verbatim}
+
+The file \texttt{miRNA.maf} contains 12 aligned microRNAs. This
+commond select 5 sequences trying to reach an optimal mean pairwise
+identity around 80\%.
+
+The default behaviour can be customized in various ways (use
+\texttt{--help} for details). The following command, for example, samples
+three different alignments with four sequences each.
+
+\begin{verbatim}
+# rnazSelectSeqs.pl --num-seqs=4 --num-samples=3 miRNA.maf | RNAz
+\end{verbatim}
+
+By default, the first sequence in the alignment is always in the set
+of selected sequences. This is the desired behaviour for genomic
+screens, where one usually likes to retain a reference sequence.
+
+
+\subsubsection{Visualizing the results}
+
+If you have installed the Vienna RNA package, you can use
+\texttt{RNAalifold} and the scripts \texttt{colorrna.pl} and
+\texttt{coloraln.pl} to produce colored visualizations of your
+predictions.
+
+
+\begin{verbatim}
+$ RNAalifold -p miRNA.maf
+$ colorrna.pl alirna.ps alidot.ps > colored_rna.ps
+$ coloraln.pl -s alirna.ps miRNA.aln > colored_aln.ps
+\end{verbatim}
+
+RNAalifold predicts the consensus structure for the alignment and
+should normally give exactly the same structure as RNAz that uses the
+RNAalifold algorithm. The colors indicate how well supported
+individual base pairs are by base substitution. If a consensus
+base-pair is colored red, all sequence in the alignment have the same
+type of base-pairs at that position. This means there are no
+consistent or compensatory mutations. If it is colored ochre there are
+two types of pairs and if they are green three different types can be
+observed. Not commonly observed, but if there are even four, five or
+all six possible base-pair combinations, the positions will be colored
+turquoise, blue and violet. On the other hand if some sequences in the
+alignment can't form a base-pair due to a mutatino inconsistent with
+the consensus structure, the position will be appear in pale
+colors. There are three different levels of paleness for 1,2, and 3
+inconsistent base-pairs. If more than 3 sequences cannot form the
+base-pair of the consensus the position will be white.
+
+
 \subsection{Large scale genomic screens}
 \label{sec:large-scale-genomic}
 
 \subsubsection{Overview}
 
 An analysis pipeline suitable for scanning a large number of genomic
-alignments is outlined in Fig.~\ref{fig:pipeline}. In the following, we
-demonstrate the usage of this pipeline on the example of a genomic screen
-of \emph{Saccharomyces cerevisiae}. We want to describe the method as
-general as possible and we will focus here mainly on technical details. A
-paper describing the results of a comprehensive RNAz screen in yeast is in
-preparation \cite{steigele06}.
+alignments is outlined in Fig.~\ref{fig:pipeline}. In the following,
+we demonstrate the usage of this pipeline on the example of a genomic
+screen of \emph{Saccharomyces cerevisiae}. We want to describe the
+method as general as possible and we will focus here mainly on
+technical details. A paper describing the results of a comprehensive
+RNAz screen in yeast has been published elsewhere \cite{Steigele:07}.
 
 \begin{figure}
   \centerline{\includegraphics*[width=0.8\textwidth]{figs/flowchart.eps}}
 
-  \caption{Analyzing pipeline illustrating the use of RNAz and the helper
-    programs.  (1) \texttt{rnazWindow.pl} slices the input alignments in
-    overlapping windows and performs a variety of filtering and
-    pre-processing steps. (2) The processed alignments can be scored with the
-    \texttt{RNAz} program (3) Overlapping hits are merged with
-    \texttt{rnazCluster.pl}. In addition, all relevant data is extracted from
-    the raw output and stored in a tabulator delimited data file. Using the
-    \texttt{--html} option, \texttt{rnazCluster.pl} generates a tree of HTML
-    pages with illustrations of the predicted structures. You need additional
-    software for this step to work. (4) The results can be filtered, sorted
-    and annotated in various ways. All programs read a tab-delimited file and
-    write a tab-delimited file. (5) Using \texttt{rnazIndex.pl}, the
-    tab-delimited data files can be exported to standard formats as GFF and
-    BED. It is also possible to create a HTML formatted index file for the
-    optional HTML output created in step 3.}
+  \caption{Analyzing pipeline illustrating the use of RNAz and the
+    helper programs.  (1) \texttt{rnazWindow.pl} slices the input
+    alignments in overlapping windows and performs a variety of
+    filtering and pre-processing steps. (2) The processed alignments
+    can be scored with the \texttt{RNAz} program (3) Overlapping hits
+    are merged with \texttt{rnazCluster.pl}. In addition, all relevant
+    data is extracted from the raw output and stored in a tabulator
+    delimited data file. Using the \texttt{--html} option,
+    \texttt{rnazCluster.pl} generates a tree of HTML pages with
+    illustrations of the predicted structures. You need additional
+    software for this step to work. (4) The results can be filtered,
+    sorted and annotated in various ways. All programs read a
+    tab-delimited file and write a tab-delimited file. (5) Using
+    \texttt{rnazIndex.pl}, the tab-delimited data files can be
+    exported to standard formats as GFF and BED. It is also possible
+    to create a HTML formatted index file for the optional HTML output
+    created in step 3.}
 \label{fig:pipeline}
 \end{figure}
 
 
 \subsubsection{Choosing raw input alignments}
 
-Choosing a reasonable set of input alignments is one of the most important
-steps during the analysis. There are a variety of different programs
-available to generate genome-wide alignments. Here, we use Multiz
-alignments of up to seven \emph{Saccharomyces} species which can be
-downloaded from the UCSC genome browser (\url{genome.ucsc.edu}). In
-principle, we could use \emph{all} alignments covering the complete genome.
-The biggest problem in large genomic screens is probably specificity. We
-have a relatively constant background signal of false positives. The more
-sequences we put into the screen, the more false positives we get out. It
-is, therefore, a good idea to choose the input set as small as possible
-(trying not to discard any interesting regions of course). In our case, we
-only analyze the intergenic regions, i.e. we discard any coding regions and
-all other annotated features (pseudogenes, repeats, ARS elements, \dots).
-We retain known ncRNAs as positive control in the set.  The selection was
-easily accomplished using the ``Table browser'' feature of the genome
-browser. We finally obtained a MAF alignment (\texttt{input.maf}) with
-10,822 alignment blocks, covering 983,947 bases of the genome (see
-section~\ref{sec:estim-false-posit-1} how to get these numbers out of a MAF
-file.).
+Choosing a reasonable set of input alignments is one of the most
+important steps during the analysis. There are a variety of different
+programs available to generate genome-wide alignments. Here, we use
+Multiz alignments of up to seven \emph{Saccharomyces} species which
+can be downloaded from the UCSC genome browser
+(\url{genome.ucsc.edu}). In principle, we could use \emph{all}
+alignments covering the complete genome.  The biggest problem in large
+genomic screens is probably specificity. We have a relatively constant
+background signal of false positives. The more sequences we put into
+the screen, the more false positives we get out. It is, therefore, a
+good idea to choose the input set as small as possible (trying not to
+discard any interesting regions of course). In our case, we only
+analyze the intergenic regions, i.e. we discard any coding regions and
+all other annotated features (pseudogenes, repeats, ARS elements,
+\dots).  We retain known ncRNAs as positive control in the set.  The
+selection was easily accomplished using the ``Table browser'' feature
+of the genome browser. We finally obtained a MAF alignment
+(\texttt{input.maf}) with 10,822 alignment blocks, covering 983,947
+bases of the genome (see section~\ref{sec:estim-false-posit-1} how to
+get these numbers out of a MAF file.).
 
 \subsubsection{Pre-processing raw alignments}
 
 As described in section~\ref{sec:scor-long-alignm}, it is necessary to
-score long alignments in overlapping windows. Given the partly poor quality
-of automatically generated genome-wide alignments additional pre-processing
-steps are required to filter out gap-rich regions, dubious aligned
-fragments or low complexity regions. All pre-processing is done by the
-\texttt{rnazWindow.pl} program which, per default, performs the following
-steps:
+score long alignments in overlapping windows. Given the partly poor
+quality of automatically generated genome-wide alignments additional
+pre-processing steps are required to filter out gap-rich regions,
+dubious aligned fragments or low complexity regions. All
+pre-processing is done by the \texttt{rnazWindow.pl} program which,
+per default, performs the following steps:
 
 \begin{enumerate}
 
 \item Slice alignments in overlapping windows of size 120 and slide 40.
 \item Check each pairwise alignment of the reference sequence (= first
-  sequence) to all other sequences and, after removing common gaps, discard
-  sequences with more than 25\% gaps in this pairwise alignment.
+  sequence) to all other sequences and, after removing common gaps,
+  discard sequences with more than 25\% gaps in this pairwise
+  alignment.
 \item Discard any sequences which are outside the definition range of
   RNAz (e.g. $<$50 nucleotides, GC content $>$0.75). 
 \item Discard the complete alignment if either the reference sequence was
@@ -712,17 +747,17 @@ This command will take a few minutes.
 
 \subsubsection{Running RNAz}
 
-The file \texttt{windows.maf} is now ready for being scored with RNAz. We
-use the \texttt{--both-strands} parameter to score both the forward and the
-reverse complement strand. We also set \texttt{--show-gaps} which means
-that the output is shown including the gaps. With this option it is
-possible to recover the complete alignment from the RNAz output file which
-is useful in later steps of the pipeline. Finally, we set a $P$ value
-cutoff of 0.5, meaning that only positive predictions are stored resulting
-in a much smaller output file.
+The file \texttt{windows.maf} is now ready for being scored with
+RNAz. We use the \texttt{--both-strands} parameter to score both the
+forward and the reverse complement strand. We use the
+\texttt{--no-shuffle} option indicating that we always calculate
+$z$-scores with the faster regression method and don't want the more
+accurate (but extremely slow) shuffling method as a fallback.  We also
+set a $P$ value cutoff of 0.5, meaning that only positive predictions
+are stored resulting in a much smaller output file.
 
 \begin{verbatim}
-# RNAz --both-strands --show-gaps --cutoff=0.5 windows.maf > rnaz.out
+# RNAz --both-strands --no-shuffle --cutoff=0.5 windows.maf > rnaz.out
 \end{verbatim}
 
 This will take approximately one hour on a modern desktop computer but may
@@ -925,11 +960,11 @@ We repeated the complete analysis with the randomized alignments and we get
 102 and 39 loci, on the $P>$0.5 and $P>$0.9 level, respectively. 
 
 \begin{table}
-  \caption{Statistics of the yeast example screen}
+  \caption{Statistics of the yeast example screen (calculated with RNAz 1.0)}
 
   \begin{center}
     \begin{tabular}{lcc}\toprule
-      & $P$>0.5 & $P$>0.9\\
+      & $P>$0.5 & $P>$0.9\\
       \midrule
     Predicted loci & 454 & 303\\
     Known ncRNAs & 280 & 215\\
@@ -1039,46 +1074,6 @@ the Perl executable is \texttt{/usr/bin/perl}. This is the standard
 location on almost all Linux/UNIX systems and OS X. If your Perl
 installation is different you have to customize the first line of all the
 Perl programs according to the location of your \texttt{perl} executable.
-
-On a Windows system the Perl programs should work if you have installed
-Perl as described in section~\ref{sec:perl} and set the \texttt{Path}
-variable as described in section~\ref{sec:microsoft-windows}.
-
-\subsection{Optional software on Windows on OS X}
-\label{sec:opti-softw-wind}
-
-To install the necessary software for the programs in sections
-\ref{sec:website} and \ref{sec:blast} might be a bit tricky on Windows and
-OS X.
-
-You can install the Vienna RNA package and NCBI Blast without problems on
-OS X by following the instructions in section \ref{sec:inst-opti-softw}.
-However, unlike on a Linux system, Ghostscript is not installed per
-default. You can try to get a pre-compiled package from
-\url{fink.sourceforge.net} or \url{darwinports.opendarwin.org}.
-Alternatively, you can download the source from
-\url{http://www.ghostscript.com/} and build the package with
-\texttt{./configure} and \texttt{make}.
-
-On Windows you can install Ghostscript through a simple installer file
-which you can download from \url{http://www.ghostscript.com/}. Follow the
-installation instructions. Locate the newly installed file
-\texttt{gswin32c.exe} and copy it to a folder which is in your
-\texttt{Path} (e.g.  the folder, where the \texttt{RNAz.exe} executable
-resides).  Rename the file to \texttt{gs.exe}.
-
-Windows users do not have to install the Vienna RNA package. The relevant
-programs are part of the RNAz windows installer.
-
-To install NCBI blast on windows, create a new folder (e.g.
-\texttt{c:$\backslash$Program Files$\backslash$blast}) and download the
-\texttt{blast-2.*-win32.exe} file from \url{ftp://ftp.ncbi.nih.gov/blast}.
-Within the new folder, double click on the \texttt{blast-2.*-win32.exe}
-file which extracts the programs and data. Add the \texttt{bin}
-subdirectory to your \texttt{Path}: Right-click \emph{My Computer}, then
-click \emph{Properties}.  Select \emph{Advanced}/\emph{Environment
-  variables}/\emph{New}. Add the complete path of the blast \texttt{bin}
-directory to the variable \emph{Path}, use ``\texttt{;}'' as separator.
 
 
 \subsection{Creating the input alignments}
@@ -1208,6 +1203,9 @@ care.
 \bibliography{manual}
 \normalfont
 \normalsize
+
+\newpage
+
 
 \appendix
 

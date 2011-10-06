@@ -4,7 +4,7 @@ Quick Start
 This packages uses the GNU configuration and installation
 system and thus compilation and installation should be easy:
 
-cd /somedir/RNAz-1.0pre
+cd /somedir/RNAz-2.1
 ./configure
 make
 make install (as root)

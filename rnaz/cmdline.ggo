@@ -9,9 +9,9 @@ option		"both-strands"	b		"Score both strands"	flag	off
 option		"outfile"	o		"Output filename" string		no
 option		"window"	w		"Score window"	  string		no
 option		"cutoff"	p		"Probability cutoff"	  float		no
-option		"show-gaps"	g		"Display alignment with gap"	flag	off
 option		"predict-strand"	s		"Use strand predictor"	flag	off
 option		"plot"	x		"Generate graphical output"	flag	off
-option		"dinucleotide"	d		"Use dinucleotide based z-scores"	flag	off
+option		"dinucleotide"	d		"Use dinucleotide based z-scores (default)"	flag	off
+option		"mononucleotide"	m		"Use dinucleotide based z-scores (RNAz 1.0 model)"	flag	off
 option		"locarnate"	l		"Use decision model for structural alignments"	flag	off
 option		"no-shuffle"	n		"Never do explicit shuffling"	flag	off

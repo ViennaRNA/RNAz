@@ -5,9 +5,8 @@
  *	Assess alignments for exceptionally stable and/or conserved      *
  *	secondary structures using RNAalifold/RNAfold and SVMs.          *
  *                                                                   *
- *	          c Stefan Washietl, Ivo L Hofacker                      *
+ *	  (c)   Stefan Washietl, Andreas Gruber, Ivo L Hofacker          *
  *                                                                   *
- *	   $Id: RNAz.c,v 1.12 2006/10/12 16:58:18 wash Exp $             *
  *                                                                   *
  *********************************************************************/
 
@@ -101,66 +100,64 @@ int main(int argc, char *argv[])
   double strandProb,strandDec;
   
   if (cmdline_parser (argc, argv, &args) != 0){
-	usage();
-	exit(EXIT_FAILURE);
+    usage();
+    exit(EXIT_FAILURE);
   }
 
   if (args.help_given){
-	help();
-	exit(EXIT_SUCCESS);
+    help();
+    exit(EXIT_SUCCESS);
   }
 
   if (args.version_given){
-	version();
-	exit(EXIT_SUCCESS);
+    version();
+    exit(EXIT_SUCCESS);
   }
 
   if (args.outfile_given){
-	out = fopen(args.outfile_arg, "w");
-	if (out == NULL){
-	  fprintf(stderr, "ERROR: Can't open output file %s\n", args.outfile_arg);
-	  exit(1);
-	}
+    out = fopen(args.outfile_arg, "w");
+    if (out == NULL){
+      fprintf(stderr, "ERROR: Can't open output file %s\n", args.outfile_arg);
+      exit(1);
+    }
   }
     
 
   /* Strand prediction implies both strands scored */
   if (args.predict_strand_flag){
-	args.both_strands_flag=1;
+    args.both_strands_flag=1;
   }
   
   
   if (args.forward_flag && !args.reverse_flag){
-	directions[0]=FORWARD;
-	directions[1]=directions[2]=0;
+    directions[0]=FORWARD;
+    directions[1]=directions[2]=0;
   }
   if (!args.forward_flag && args.reverse_flag){
-	directions[0]=REVERSE;
-	directions[1]=directions[2]=0;
+    directions[0]=REVERSE;
+    directions[1]=directions[2]=0;
   }
   if ((args.forward_flag && args.reverse_flag) || args.both_strands_flag){
-	directions[0]=FORWARD;
-	directions[1]=REVERSE;
+    directions[0]=FORWARD;
+    directions[1]=REVERSE;
   }
 
   if (args.window_given){
-	if (sscanf(args.window_arg,"%d-%d",&from,&to)!=2){
-	  nrerror("ERROR: Invalid --window/-w command. "
-			  "Use it like '--window 100-200'\n");
-	}
-	
-	printf("from:%d,to:%d\n",from,to);
+    if (sscanf(args.window_arg,"%d-%d",&from,&to)!=2){
+      nrerror("ERROR: Invalid --window/-w command. "
+              "Use it like '--window 100-200'\n");
+    }
+    printf("from:%d,to:%d\n",from,to);
   }
 
   
   if (args.inputs_num>=1){
-	clust_file = fopen(args.inputs[0], "r"); 
-	if (clust_file == NULL){
-	  fprintf(stderr, "ERROR: Can't open input file %s\n", args.inputs[0]);
-	  exit(1);
-	}
+    clust_file = fopen(args.inputs[0], "r"); 
+    if (clust_file == NULL){
+      fprintf(stderr, "ERROR: Can't open input file %s\n", args.inputs[0]);
+      exit(1);
+    }
   }
-
 
  
   /* Global RNA package variables */
@@ -168,33 +165,33 @@ int main(int argc, char *argv[])
   dangles=2;
 
   switch(checkFormat(clust_file)){
-
   case CLUSTAL:
-	readFunction=&read_clustal;
-	break;
+    readFunction=&read_clustal;
+    break;
   case MAF:
-	readFunction=&read_maf;
-	break;
+    readFunction=&read_maf;
+    break;
   case 0:
-	nrerror("ERROR: Unknown alignment file format. Use Clustal W or MAF format.\n");
+    nrerror("ERROR: Unknown alignment file format. Use Clustal W or MAF format.\n");
   }
 
   /* Set z-score type (mono/dinucleotide) here */
-  z_score_type = 0;
-  if (args.dinucleotide_given) z_score_type = 2;
+  z_score_type = 2;
+
+  if (args.mononucleotide_given) z_score_type = 0;
+
 
   /* now let's decide which decision model to take */
   /* decision_model_type = 1 for normal model used in RNAz 1.0 */
   /* decision_model_type = 2 for normal model using dinucelotide background */
   /* decision_model_type = 3 for structural model using dinucelotide background */
-  decision_model_type = 1;
-  if (args.dinucleotide_given) decision_model_type = 2;
-  if (args.dinucleotide_given && args.locarnate_given) decision_model_type = 3;
-  if ((!args.dinucleotide_given) && args.locarnate_given){
+  decision_model_type = 2;
+  if (args.mononucleotide_given) decision_model_type = 1;
+  if (args.locarnate_given) decision_model_type = 3;
+  if ((args.mononucleotide_given) && args.locarnate_given){
     z_score_type=2;
-    //nrerror("ERROR: Structural decision model only trained with dinucleotide background model.\n");
+    nrerror("ERROR: Structural decision model only trained with dinucleotide background model.\n");
   }
-
 
   if (args.no_shuffle_given) avoid_shuffle = 1;
 
@@ -324,13 +321,12 @@ int main(int argc, char *argv[])
 		  sprintf(output+strlen(output),">%s\n",window[i]->name);
 		}
 
-		if (args.show_gaps_flag){
 
-		  gapStruc= (char *) space(sizeof(char)*(strlen(window[i]->seq)+1));
+    gapStruc= (char *) space(sizeof(char)*(strlen(window[i]->seq)+1));
 
-		  l=ll=0;
+    l=ll=0;
 
-		  while (window[i]->seq[l]!='\0'){
+    while (window[i]->seq[l]!='\0'){
 			if (window[i]->seq[l]!='-'){
 			  gapStruc[l]=singleStruc[ll];
 			  l++;
@@ -339,24 +335,16 @@ int main(int argc, char *argv[])
 			  gapStruc[l]='-';
 			  l++;
 			}
-		  }
-		  char ch;
-		  ch = 'R';
-		  if (z_score_type == 1 || z_score_type == 3) ch = 'S';
+    }
+    char ch;
+    ch = 'R';
+    if (z_score_type == 1 || z_score_type == 3) ch = 'S';
 		  		  
-		  sprintf(output+strlen(output),"%s\n%s ( %6.2f, z-score = %6.2f, %c)\n",
-			  window[i]->seq,gapStruc,singleMFE,singleZ,ch);
-		  z_score_type = z_score_type_orig;
+    sprintf(output+strlen(output),"%s\n%s ( %6.2f, z-score = %6.2f, %c)\n",
+            window[i]->seq,gapStruc,singleMFE,singleZ,ch);
+    z_score_type = z_score_type_orig;
 		  
-		} else {
-		  char ch;
-		  ch = 'R';
-		  if (z_score_type == 1 || z_score_type == 3) ch = 'S';
 
-		  sprintf(output+strlen(output),"%s\n%s ( %6.2f, z-score = %6.2f, %c)\n",
-			  woGapsSeq,singleStruc,singleMFE,singleZ,ch);
-		  z_score_type = z_score_type_orig;
-		}
 		free(woGapsSeq);
 		free(singleStruc);
 		
@@ -807,25 +795,24 @@ PRIVATE void help(void){
   cmdline_parser_print_version ();
 
   printf("\nUsage: %s [OPTIONS]... [FILES]\n\n", CMDLINE_PARSER_PACKAGE);
-  printf("%s\n","  -h, --help              Print help and exit");
-  printf("%s\n","  -V, --version           Print version and exit");
   printf("%s\n","  -f, --forward           Score forward strand");
   printf("%s\n","  -r, --reverse           Score reverse strand");
   printf("%s\n","  -b, --both-strands      Score both strands");
   printf("%s\n","  -o, --outfile=FILENAME  Output filename");
-  printf("%s\n","  -w, --window=START-STOP Score window from START to STOP");
   printf("%s\n","  -p, --cutoff=FLOAT      Probability cutoff");
-  printf("%s\n","  -g, --show-gaps         Display alignment with gap  (default=off)");
-  printf("%s\n","  -s, --predict-strand    Use strand predictor  (default=off)");
-  printf("%s\n","  -d, --dinucleotide      Use dinculeotide shuffled z-scores (default=off)");
+  printf("%s\n","  -d, --dinucleotide      Use dinucleotide shuffled z-scores (default)");
+  printf("%s\n","  -m, --mononucleotide    Use mononucleotide shuffled z-scores (default)");
   printf("%s\n","  -l, --locarnate         Use decision model for structural alignments (default=off)");
-  printf("%s\n\n","  -n, --no-shuffle      Do not use shuffling (default=off)");
+  printf("%s\n","  -n, --no-shuffle        Never fall back to shuffling (default=off)");
+  printf("%s\n","  -h, --help              Print this help screen");
+  printf("%s\n\n","  -V, --version           Show version information");
+
 
 }
 
 PRIVATE void version(void){
   /*printf("RNAz version " PACKAGE_VERSION "\n");*/
-  printf("RNAz version 2.0pre\n");
+  printf("RNAz version 2.1\n");
   exit(EXIT_SUCCESS);
 }
 
