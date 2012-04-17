@@ -77,7 +77,7 @@ if ($printHeader){
   }
 
   if ($printHits){
-	print "# windowID\tclusterID\tseqID\tstart\tend\tstrand\tN\tcolumns\tidentity\tmeanMFE\tconsensusMFE\tenergyTerm\tcovarianceTerm\tcombPerPair\tz\tSCI\tdecValue\tP\nGC";
+	print "# windowID\tclusterID\tseqID\tstart\tend\tstrand\tN\tcolumns\tidentity\tmeanMFE\tconsensusMFE\tenergyTerm\tcovarianceTerm\tcombPerPair\tz\tSCI\tdecValue\tP\tGC\n";
   }
 }
 
