@@ -251,20 +251,6 @@ struct svm_model* get_decision_model(char *basefilename, int decision_model_type
 */
 
 
-struct svm_model{
-  struct svm_parameter param;
-  int nr_class;
-  int l;
-  struct svm_node **SV;
-  double **sv_coef;
-  double *rho;
-  double *probA;
-  double *probB;
-  int *label;
-  int *nSV;
-  int free_sv;
-};
-
 struct svm_model* svm_load_model_string(char *modelString){
 
   /* redefinition from svm.cpp */

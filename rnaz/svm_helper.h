@@ -34,5 +34,6 @@ struct svm_model* svm_load_model_string(char *fp);
 
 int print_model(const char *model_file_name, struct svm_model *model);
 
+#define svm_destroy_model(A)    svm_free_model_content((A))
 
 
