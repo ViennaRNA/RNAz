@@ -93,16 +93,16 @@ sub readMAF{
 
 	  $seq=~s/\./-/g;
 
-	  my $row={name=>$name,
-			   start=>$start,
-			   end=>$end,
-			   fullLength=>$fullLength,
-			   seq=>$seq,
-			   strand=>$strand};
-
+	  my $row = {name       => $name,
+		     start      => $start,
+		     end        => $end,
+		     fullLength => $fullLength,
+		     seq        => $seq,
+		     strand     => $strand};
+	  
 	  if ($name=~/^(.*)\.(.*)$/){
-		$row->{org}=$1;
-		$row->{chrom}=$2;
+		$row->{org}   = $1;
+		$row->{chrom} = $2;
 	  }
 
 	  push @aln, $row;
