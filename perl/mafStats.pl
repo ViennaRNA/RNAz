@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# Last Time-stamp: <2013-08-14 19:47:58 at>
+# Last Time-stamp: <2013-08-14 20:22:27 at>
 # date-o-birth: <2013-07-22 13:36:59 at>
 # mafStats.pl
 # does some basic statistics on maf alignments
@@ -61,7 +61,7 @@ my $c_onecol  = 0;
 
 # print right away
 if ($print_line){
-  printf "%-6s %6s %6s %6s 10s\n",
+  printf "%-6s %6s %6s %6s %10s\n",
   "blockNr", "blockLength", "meanPairID", "nrOrganisms", "orgSet";
 }
 
