@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# Last Time-stamp: <2013-08-14 14:14:16 at>
+# Last Time-stamp: <2013-08-14 15:27:47 at>
 # date-o-birth: <2013-07-22 13:36:59 at>
 # mafStats.pl
 # does some basic statistics on maf alignments
@@ -55,34 +55,34 @@ my %stats = ();
 
 while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
 
-  $alnCounter++;
   # name, start, length, strand, fullLength, seq, org, chrom
   my $fullAln = parseAln( $alnString, $alnFormat );
 
   my %counts  = ();
-  my %counts2 = ();
-  
-  for my $i (0..$#$fullAln){
-
-    # multiple occurences
-    foreach my $j ("org"){
-      $counts{$j}{$fullAln->[$i]->{$j}}="";
-    }
-  }
 
   # Block length of current alignment
   my $l = length($fullAln->[0]->{seq});
+  next if $l <= 1;
   $stats{blockLength}{$l}++;
 
   # mean pairwise ID
   my $meanPairID = meanPairID($fullAln) * 100;
   $stats{meanPairID}{$meanPairID}++;
   
+  # multiple occurences
+  for my $i (0..$#$fullAln){
+
+    foreach my $j ("org"){
+      $counts{$j}{$fullAln->[$i]->{$j}}="";
+    }
+  }
   # count the occurences
   foreach my $k (keys %counts){
     my $c = scalar(keys %{$counts{$k}});
     $stats{$k}{$c}++;
   }
+  $alnCounter++;
+
 }
 
 # print counts
