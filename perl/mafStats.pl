@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# Last Time-stamp: <2013-08-14 15:27:47 at>
+# Last Time-stamp: <2013-08-14 19:47:58 at>
 # date-o-birth: <2013-07-22 13:36:59 at>
 # mafStats.pl
 # does some basic statistics on maf alignments
@@ -18,10 +18,13 @@ my $index_start   = 1;
 my $no_blocks     = 1;
 my $pre           = "mafsplit";
 
+my $print_line;
+
 GetOptions(
   'i|index:i'    => \$index_start,
   'n:i'          => \$no_blocks,
   'o|out:s'      => \$pre,
+  'line|l'       => \$print_line,
   'h|help'       => \$help,
   'man'          => \$man,
   'v|version'    => \$version
@@ -52,17 +55,28 @@ my $alnCounter = 0;
 my $filecount  = $index_start;
 my @tmp_aln    = ();
 my %stats = ();
+my $c_hs_only = 0;
+my $c_all     = 0;
+my $c_onecol  = 0;
+
+# print right away
+if ($print_line){
+  printf "%-6s %6s %6s %6s 10s\n",
+  "blockNr", "blockLength", "meanPairID", "nrOrganisms", "orgSet";
+}
+
 
 while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
-
+  $c_all++;
   # name, start, length, strand, fullLength, seq, org, chrom
   my $fullAln = parseAln( $alnString, $alnFormat );
-
+  $c_hs_only++, next if scalar(@$fullAln) <2;
+      
   my %counts  = ();
 
   # Block length of current alignment
   my $l = length($fullAln->[0]->{seq});
-  next if $l <= 1;
+  $c_onecol++, next if $l <= 1;
   $stats{blockLength}{$l}++;
 
   # mean pairwise ID
@@ -73,7 +87,7 @@ while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
   for my $i (0..$#$fullAln){
 
     foreach my $j ("org"){
-      $counts{$j}{$fullAln->[$i]->{$j}}="";
+      $counts{$j}{$fullAln->[$i]->{$j}} = "";
     }
   }
   # count the occurences
@@ -81,21 +95,33 @@ while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
     my $c = scalar(keys %{$counts{$k}});
     $stats{$k}{$c}++;
   }
+
+  # organisms as string
+  my $org_label = join("_", (sort keys %{$counts{org}}));
   $alnCounter++;
 
-}
-
-# print counts
-print "\# totalBlocks $alnCounter\n";
-
-foreach my $k (keys %stats){
-  printf("%-15s",$k);
-  foreach my $i (keys %{$stats{$k}}){
-    printf(" %6s %6s", $i, $stats{$k}{$i});
+  # print right away
+  if ($print_line){
+    printf "%-6i %6i %6.2f %2i %30s\n",
+    $alnCounter, $l, $meanPairID, (scalar(keys %{$counts{org}})), $org_label;
   }
-  print "\n";
 }
 
+unless ($print_line){
+  # print counts
+  print "\# totalBlocks $c_all\n";
+  print "\# hsOnly      $c_hs_only\n";
+  print "\# oneCol      $c_onecol\n";
+  print "\# BlocksUsed  $alnCounter\n";
+  
+  foreach my $k (keys %stats){
+    printf("%-15s",$k);
+    foreach my $i (keys %{$stats{$k}}){
+      printf(" %6s %6s", $i, $stats{$k}{$i});
+    }
+    print "\n";
+  }
+}
   
   
 #  $alnCounter++;

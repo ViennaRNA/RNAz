@@ -691,16 +691,22 @@ sub meanPairID{
   my $matches=0;
 
   for my $i (0..$#aln){
-	for my $j ($i+1..$#aln){
-	  for my $k (0..(@{$aln[0]}-1)){
-		if (($aln[$i][$k] ne '-') or ($aln[$j][$k] ne '-')){
-		  if (uc($aln[$i][$k]) eq uc($aln[$j][$k])){  #Case insensitive comparison bcse of potentially masked letters
-			$matches++;
-		  }
-		  $pairs++;
-		}
+    for my $j ($i+1..$#aln){
+      for my $k (0..(@{$aln[0]}-1)){
+	if (($aln[$i][$k] ne '-') or ($aln[$j][$k] ne '-')){
+	  if ($aln[$i][$k] eq $aln[$j][$k]){
+	    $matches++;
 	  }
+	  $pairs++;
 	}
+      }
+    }
+  }
+  if ($pairs <1){
+    foreach my $i (@inputAln){
+      print "$_ $i->{$_}" foreach (sort keys %$i);
+      print "\n";
+    }
   }
   return sprintf("%.4f",$matches/$pairs);
 }
