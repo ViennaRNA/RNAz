@@ -100,7 +100,7 @@ sub readMAF{
 		     seq        => $seq,
 		     strand     => $strand};
 	  
-	  if ($name=~/^(.*)\.(.*)$/){
+	  if ($name=~/^(\w+)\.(.*)$/){
 		$row->{org}   = $1;
 		$row->{chrom} = $2;
 	  }
