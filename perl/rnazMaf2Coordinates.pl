@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# Last Time-stamp: <2013-08-22 19:03:06 at>
+# Last Time-stamp: <2013-08-23 19:44:43 at>
 # date-o-birth: <2013-08-22 12:11:45 at>, vienna
 # parent: rnazMAF2BED.pl
 # converts maf locks into coordinate files
@@ -16,7 +16,7 @@ use lib $FindBin::Bin;
 use RNAz;
 use Getopt::Long;
 use Pod::Usage;
-
+use AnnotUtil qw(printGtfFieldsAndAttributes);
 
 my $help;
 my $seqID;
@@ -68,7 +68,7 @@ my $alnFormat = checkFormat($fh); # works only with MAF for now!
 while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
 
   # name, start, length, strand, fullLength, seq, org, chrom
-  my $fullAln = parseAln( $alnString, $alnFormat );
+  my ($fullAln, $orgs) = parseAln( $alnString, $alnFormat, "1" );
 
   # only reference species in alignment
   next if scalar(@$fullAln) < 2;
@@ -82,42 +82,68 @@ while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
   my $meanPairID = meanPairID($fullAln) * 100;
 
   # prepare data for printing
-  my %attribs = ("meanPairID" => [$meanPairID],
-		 "blockNr"    => [$alnCounter]);
+  my %add = ("meanPairID"   => [$meanPairID],
+	     "blockNr"      => [$alnCounter],
+	     "block_length" => [$l],
+	     "org_block"    => [sort keys %$orgs],
+	     "nr_org"       => [scalar(keys %$orgs)]);
   
-  &mafToGtf($fullAln,\%attribs) if $out_formats{"gtf"};
+  my ($blocks) = &mafToGtf($fullAln,\%add) if $out_formats{"gtf"};
+
+  for my $i (0.. $#$blocks){
+    my ($fields, $attribs) = @{$blocks->[$i]};
+    printGtfFieldsAndAttributes($fields, $attribs,*STDOUT);
+  }
 }
 
 
 sub mafToGtf{
-  my ($fullAln,$attributes) = @_;
+  my ($fullAln,$add) = @_;
 
-  my %organisms = ();
+  # reformat attribs: add double quotes
+  foreach my $k (keys %$add){
+    $_ = "\"".$_."\"" foreach @{$add->{$k}};
+  }
+
+  my @block = ();
+  my $id    = "";
   
   for my $i (0..$#$fullAln){
-    $organisms{$fullAln->[$i]->{org}} = '';
 
+    # if sequence on minus strand, the start is relative to end of chromosome
+    my $start = $fullAln->[$i]->{start} + 1;
+    my $end   = $fullAln->[$i]->{start} + $fullAln->[$i]->{length};
+    
+    if ($fullAln->[$i]->{strand} eq "-"){
+      $start = $fullAln->[$i]->{fullLength} - $fullAln->[$i]->{start} - $fullAln->[$i]->{length} + 1;
+      $end   = $fullAln->[$i]->{fullLength} - $fullAln->[$i]->{start};
+    }
+    
     my %fields = ("chr"        => $fullAln->[$i]->{chrom},
 		  "source"     => "maf",
 		  "type"       => "exon",
-		  "start"      => $fullAln->[$i]->{start} + 1,
-		  "end"        => $fullAln->[$i]->{start} + $fullAln->[$i]->{fullLength},
+		  "start"      => $start,
+		  "end"        => $end,
 		  "score"      => ".",
 		  "strand"     => $fullAln->[$i]->{strand},
 		  "phase"      => ".",
 		  "attributes" => "");
     
+
+    # ID of reference sequence
+    # do this once for first line in block ($i==0)
+    $id = join("_",$fields{chr},$start,$end) if ($i == 0);
+
+    my %attribs = %$add;
+    $attribs{org}->[0]           = "\"".$fullAln->[$i]->{org}."\"";
+    $attribs{gene_id}->[0]       = "\"".$id."\"";
+    $attribs{transcript_id}->[0] = "\"".$id."\"";
+    
+    push(@block,[\%fields, \%attribs]);
   }
-
-  
-  
+  return(\@block);
 }
 
-sub print_gtf{
-  my () = @_;
-  
-  return();
-}
 
 __END__
 

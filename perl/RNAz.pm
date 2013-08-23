@@ -12,24 +12,24 @@ our @EXPORT_OK = ();
 our $rnazVersion='2.1';
 
 our @EXPORT = qw(checkFormat
-				 getNextAln
-				 formatAln
-				 readMAF
-				 readClustal
-				 parseAln
-				 sliceAlnByColumn
-				 alnCol2genomePos
-				 removeCommonGaps
-				 rangeWarn
-				 revAln
-				 meanPairID
-				 pruneAln
-				 getNextRNAz
-				 parseRNAz
-				 shuffleAln
-				 getSeq
-				 blastSeq
-				 niceNumber);
+		 getNextAln
+		 formatAln
+		 readMAF
+		 readClustal
+		 parseAln
+		 sliceAlnByColumn
+		 alnCol2genomePos
+		 removeCommonGaps
+		 rangeWarn
+		 revAln
+		 meanPairID
+		 pruneAln
+		 getNextRNAz
+		 parseRNAz
+		 shuffleAln
+		 getSeq
+		 blastSeq
+		 niceNumber);
 
 # Set version of current RNAz package
 
@@ -69,46 +69,50 @@ sub checkFormat{
 ######################################################################
 
 sub readMAF{
-
-  my $string=shift;
-
+  my ($string, $o) = @_;
+  
   return [] if $string eq '';
-
-  my @input=split("\n",$string);
-
-  my @aln=();
-
+  
+  my @input = split("\n",$string);
+  my @aln   = ();
+  my %orgs  = ();
+  
   foreach my $i (0..$#input){
-
-	$_=$input[$i];
-	
-	next if (/^\s?\#/);
-	next if (/^\s?a/);
-
-	if (/^\s?s/) {
-	  (my $dummy, my $name, my $start, my $length,
-	   my $strand, my $fullLength, my $seq)=split;
-
-	  my $end=$start+$length;
-
-	  $seq=~s/\./-/g;
-
-	  my $row = {name       => $name,
-		     start      => $start,
-		     end        => $end,
-		     fullLength => $fullLength,
-		     seq        => $seq,
-		     strand     => $strand};
-	  
-	  if ($name=~/^(\w+)\.(.*)$/){
-		$row->{org}   = $1;
-		$row->{chrom} = $2;
-	  }
-
-	  push @aln, $row;
-	}
+    
+    $_=$input[$i];
+    
+    next if (/^\s?\#/);
+    next if (/^\s?a/);
+    
+    if (/^\s?s/) {
+      (my $dummy, my $name, my $start, my $length,
+       my $strand, my $fullLength, my $seq)=split;
+      
+      my $end=$start+$length; # WRONG if on minus strand. see maf format specs@ucsc
+      
+      $seq =~ s/\./-/g;
+      
+      my $row = {name       => $name,
+		 start      => $start,
+		 end        => $end,
+		 length     => $length,
+		 fullLength => $fullLength,
+		 seq        => $seq,
+		 strand     => $strand};
+      
+      if ($name=~/^(\w+)\.(.*)$/){
+	$row->{org}   = $1;
+	$row->{chrom} = $2;
+	$orgs{$1}++;
+      }
+      else{
+	$orgs{$name}++;
+      }
+      push @aln, $row;
+    }
   }
-  return \@aln;
+  return(\@aln, \%orgs) if $o;
+  return(\@aln)     unless $o;
 }
 
 sub readClustal{
@@ -121,35 +125,35 @@ sub readClustal{
   my @lines = split /^/, $inString;
 
   foreach (@lines){
-	next if ( /^\s+$/ );
-	next if ( /^\/\/\$/); # ignore block separators '//'
-	my ($seqname, $aln_line) = ('', '');	
-	if ( /^\s*(\S+)\s*\/\s*(\d+)-(\d+)\s+(\S+)\s*\d*\s*$/ ) {
-	  # clustal 1.4 format
-	  #($seqname,$aln_line) = ("$1/$2-$3",$4);
-	  ($seqname,$aln_line) = ($1,$4);
-	  $seqname.="\_$2\_$3";
-	} elsif ( /^(\S+)\s+([A-Z\-]+)\s*\d*\s*$/i ) {
+    next if ( /^\s+$/ );
+    next if ( /^\/\/\$/); # ignore block separators '//'
+    my ($seqname, $aln_line) = ('', '');	
+    if ( /^\s*(\S+)\s*\/\s*(\d+)-(\d+)\s+(\S+)\s*\d*\s*$/ ) {
+      # clustal 1.4 format
+      #($seqname,$aln_line) = ("$1/$2-$3",$4);
+      ($seqname,$aln_line) = ($1,$4);
+      $seqname.="\_$2\_$3";
+    } elsif ( /^(\S+)\s+([A-Z\-]+)\s*\d*\s*$/i ) {
 
-	  ($seqname,$aln_line) = ($1,$2);
-	} else {
-	  next;
-	}
-
-	if ( !exists $order{$seqname} ) {
-	  $order{$seqname} = $order++;
-	}
-
-	$input{$seqname} .= $aln_line;
+      ($seqname,$aln_line) = ($1,$2);
+    } else {
+      next;
+    }
+    
+    if ( !exists $order{$seqname} ) {
+      $order{$seqname} = $order++;
+    }
+    
+    $input{$seqname} .= $aln_line;
   }
-
+  
   my @aln=();
   my $N=0;
-
+  
   foreach my $key (keys %input) {
-	$input{$key}=~s/\./-/g;
-	$aln[$order{$key}] = {name=>$key, seq=>$input{$key}};
-	$N++
+    $input{$key}=~s/\./-/g;
+    $aln[$order{$key}] = {name=>$key, seq=>$input{$key}};
+    $N++
   }
   return [@aln];
 }
@@ -185,80 +189,79 @@ sub formatAln{
 
   foreach my $row (@aln){
 
-	my $name="seq$counter";
-	$counter++;
-	
-	$name=$row->{name};
-	
-	my $start=$row->{start};
-	my $end=$row->{end};
-	my $strand=$row->{strand};
-
-	my $pos='';
-	
-	if (defined $start and defined $end){
-	  $pos="/$start-$end";
-	  if (defined $strand){
-		if ($strand eq '+'){
-		  $name.=""; # Don't put _fwd
-		} else {
-		  $name.="_rev";
-		}
-	  }
+    my $name="seq$counter";
+    $counter++;
+    
+    $name=$row->{name};
+    
+    my $start=$row->{start};
+    my $end=$row->{end};
+    my $strand=$row->{strand};
+    
+    my $pos='';
+    
+    if (defined $start and defined $end){
+      $pos="/$start-$end";
+      if (defined $strand){
+	if ($strand eq '+'){
+	  $name.=""; # Don't put _fwd
+	} else {
+	  $name.="_rev";
 	}
-	
-	push @alnNames, "$name$pos";
-	push @alnSeqs, $row->{seq};
-	
+      }
+    }
+    
+    push @alnNames, "$name$pos";
+    push @alnSeqs, $row->{seq};
+    
   }
-
-
+  
+  
   my $output='';
-
+  
   if ($format eq 'clustal'){
-
-	$output="CLUSTAL W(1.81) multiple sequence alignment\n\n\n";
-	my $maxName=0;
-
-	foreach my $name (@alnNames){
-	  $maxName=($maxName<length($name))?length($name):$maxName;
-	}
-
-	for my $i (0..$#alnNames){
-	  my $buffer=" "x(($maxName+6)-length($alnNames[$i]));
-	  $alnNames[$i].=$buffer;
-	}
-	my $columnWidth=60;
-	my $currPos=0;
-	my $length=length($alnSeqs[0]);
-
-	while ($currPos<$length){
-	  for my $i (0..$#alnNames){
-		$output.=$alnNames[$i];
-		$output.=substr($alnSeqs[$i],$currPos,$columnWidth);
-		$output.="\n";
-	  }
-	  $output.="\n\n";
-	  $currPos+=$columnWidth;
-	}
-  } elsif ($format eq 'fasta'){
-	foreach my $i (0..$#alnNames){
-	  my $name=$alnNames[$i];
-	  my $seq=$alnSeqs[$i];
-	  $seq=~ s/(.{60})/$1\n/g;
-	  $output.=">$name\n$seq\n";
-	}
-
-  } elsif ($format eq 'maf'){
-	$output.="a score=0\n";
-	foreach my $row (@aln){
-	  my $length=$row->{end}-$row->{start};
-	  $output.="s $row->{name} $row->{start} $length $row->{strand} $row->{fullLength} $row->{seq}\n";
-	}
+    
+    $output="CLUSTAL W(1.81) multiple sequence alignment\n\n\n";
+    my $maxName=0;
+    
+    foreach my $name (@alnNames){
+      $maxName=($maxName<length($name))?length($name):$maxName;
+    }
+    
+    for my $i (0..$#alnNames){
+      my $buffer=" "x(($maxName+6)-length($alnNames[$i]));
+      $alnNames[$i].=$buffer;
+    }
+    my $columnWidth=60;
+    my $currPos=0;
+    my $length=length($alnSeqs[0]);
+    
+    while ($currPos<$length){
+      for my $i (0..$#alnNames){
+	$output.=$alnNames[$i];
+	$output.=substr($alnSeqs[$i],$currPos,$columnWidth);
 	$output.="\n";
+      }
+      $output.="\n\n";
+      $currPos+=$columnWidth;
+    }
+  } elsif ($format eq 'fasta'){
+    foreach my $i (0..$#alnNames){
+      my $name=$alnNames[$i];
+      my $seq=$alnSeqs[$i];
+	  $seq=~ s/(.{60})/$1\n/g;
+      $output.=">$name\n$seq\n";
+    }
+    
+  } elsif ($format eq 'maf'){
+    $output.="a score=0\n";
+    foreach my $row (@aln){
+      my $length=$row->{end}-$row->{start};
+      $output.="s $row->{name} $row->{start} $length $row->{strand} $row->{fullLength} $row->{seq}\n";
+    }
+    $output.="\n";
   }
   return $output;
-
 }
 
 
@@ -295,11 +298,12 @@ sub getNextAln{
 
 sub parseAln{
 
-  (my $string,my $format)=@_;
+  my ($string, $format, $orgs) = @_;
 
-  $format=uc($format);
+  $format = uc($format);
 
-  return readMAF($string) if $format eq "MAF";
+  return readMAF($string, $orgs) if (($format eq "MAF") && defined($orgs));
+  return readMAF($string)        if (($format eq "MAF") && (!defined($orgs)));
 
   return readClustal($string) if $format eq "CLUSTAL";
 
