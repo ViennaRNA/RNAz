@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# Last Time-stamp: <2013-08-23 19:44:43 at>
+# Last Time-stamp: <2013-08-26 11:15:46 at>
 # date-o-birth: <2013-08-22 12:11:45 at>, vienna
 # parent: rnazMAF2BED.pl
 # converts maf locks into coordinate files
@@ -18,11 +18,11 @@ use Getopt::Long;
 use Pod::Usage;
 use AnnotUtil qw(printGtfFieldsAndAttributes);
 
-my $help;
+my $help    = 0;
+my $man     = 0;
 my $seqID;
 my $version;
 my $cluster;
-my $man;
 my $out;
 
 GetOptions('seq-id|s=s'   => \$seqID,
