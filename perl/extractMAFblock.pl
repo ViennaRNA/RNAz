@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# Last Time-stamp: <2014-07-13 17:39:57 at>
+# Last Time-stamp: <2014-07-13 17:59:21 at>
 # date-o-birth: <2013-08-22 12:11:45 at>, vienna
 # parent: rnazMAF2BED.pl
 # extract maf blocks that are overlapped by some feature
@@ -28,9 +28,12 @@ my $out_format = "CLUSTAL";
 
 my $file_size = 100;
 my $prefix    = "lfold";
+my $pre_mafin;
+
 
 GetOptions('offset|off:i' => \$off,
 	   'outformat|f:s'=> \$out_format,
+	   'mafin:s'      => \$pre_mafin,
 	   'out|o:s'      => \$prefix,
 	   'version|v'    => \$version,
 	   'help|h'       => \$help,
@@ -111,7 +114,7 @@ foreach my $fileNr (keys %data ){
 # Open the determined maf file
 # --------------------------------------------------
 
-  my $fileName = join(".",$prefix,$fileNr,"maf");
+  my $fileName = join(".",$pre_mafin,$fileNr,"maf");
   my $fh;
   
   if ( !defined $fileName ) {
