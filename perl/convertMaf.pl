@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# Last Time-stamp: <2013-08-26 11:15:46 at>
+# Last Time-stamp: <2014-07-13 12:51:01 at>
 # date-o-birth: <2013-08-22 12:11:45 at>, vienna
 # parent: rnazMAF2BED.pl
 # converts maf locks into coordinate files
@@ -16,30 +16,30 @@ use lib $FindBin::Bin;
 use RNAz;
 use Getopt::Long;
 use Pod::Usage;
-use AnnotUtil qw(printGtfFieldsAndAttributes);
 
 my $help    = 0;
 my $man     = 0;
 my $seqID;
 my $version;
 my $cluster;
-my $out;
 my $off = 1;
+my $out_format = "CLUSTAL";
 
 GetOptions('seq-id|s=s'   => \$seqID,
 	   'cluster|c'    => \$cluster,
-	   'out|format:s' => \$out,
            'offset|off:i' => \$off,
+	   'outformat|f:s'=> \$out_format,
 	   'version|v'    => \$version,
 	   'help|h'       => \$help,
 	   'man'          => \$man
     ) or pod2usage(1);
 
-my %out_formats = ("gtf" => '',
-		   "bed" => '');
+# Known output formats
+my %out_formats = ("CLUSTAL" => undef,
+		   "MAF"     => undef);
 
 # Error message: no output format or not exsisting format specified
-#die("Please specify a valid output format:\n", join(", ", (sort keys %out_formats)),"\n") unless (defined($out) || exists($out_formats{$out}));
+die("Please specify a valid output format:\n", join(", ", (sort keys %out_formats)),"\n") unless (defined(uc($out_format)) || exists($out_formats{uc($out_format)}));
 
 # set the format
 #$out_formats{$out} = 1;
@@ -48,7 +48,7 @@ pod2usage(1) if $help;
 pod2usage(-verbose => 2) if $man;
 
 if ($version){
-  print "\nrnazMAF2BED.pl is part of RNAz $RNAz::rnazVersion\n\n";
+  print "\convertMAF.pl is part of RNAz $RNAz::rnazVersion\n\n";
   print "http://www.tbi.univie.ac.at/~wash/RNAz\n\n";
   exit(0);
 }
@@ -79,7 +79,7 @@ while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
   $alnCounter++;
 
 # Print alignment in clustal format  
-  print(formatAln($fullAln,"CLUSTAL")), last if $alnCounter == $off;  
+  print(formatAln($fullAln,uc($out_format))), last if $alnCounter == $off;  
 
 }
 
