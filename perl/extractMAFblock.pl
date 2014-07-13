@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# Last Time-stamp: <2014-07-13 17:59:21 at>
+# Last Time-stamp: <2014-07-13 18:32:51 at>
 # date-o-birth: <2013-08-22 12:11:45 at>, vienna
 # parent: rnazMAF2BED.pl
 # extract maf blocks that are overlapped by some feature
@@ -23,16 +23,14 @@ use RNAz;
 my $help    = 0;
 my $man     = 0;
 my $version;
-my $off = 1;
-my $out_format = "CLUSTAL";
 
+my $out_format = "CLUSTAL";
 my $file_size = 100;
 my $prefix    = "lfold";
 my $pre_mafin;
 
 
-GetOptions('offset|off:i' => \$off,
-	   'outformat|f:s'=> \$out_format,
+GetOptions('outformat|f:s'=> \$out_format,
 	   'mafin:s'      => \$pre_mafin,
 	   'out|o:s'      => \$prefix,
 	   'version|v'    => \$version,
@@ -90,12 +88,12 @@ while(<>){
   my $fileNr  = int(($blockNr+($file_size-1))/$file_size);
   my $filepos = $blockNr - $file_size*($fileNr-1);
 
-  $data{$fileNr}{$filepos}[0] = $blockNr;
-  push(@{$data{$fileNr}{$filepos}[1]}, $gqID);
+  $data{$fileNr}{$filepos} = $blockNr;
+#  push(@{$data{$fileNr}{$filepos}[1]}, $gqID);
 
   # print gtf file
 
-  $attribs1->{blockNr}->[0] = $blockNr;
+#  $attribs1->{blockNr}->[0] = $blockNr;
   
 }
 
@@ -108,7 +106,6 @@ while(<>){
 foreach my $fileNr (keys %data ){
 
   my @filepos = (sort {$a <=> $b} keys %{$data{$fileNr}});
-  print "$filepos[0]\n";
 
 # --------------------------------------------------
 # Open the determined maf file
@@ -150,7 +147,7 @@ foreach my $fileNr (keys %data ){
     # Print alignment in clustal format
     if ($filepos[0] == $alnCounter){
 
-      my $out = join(".",$prefix,$data{$fileNr}{$filepos[0]}[0],"aln");
+      my $out = join(".",$prefix,$data{$fileNr}{$filepos[0]},"aln");
       open(BLOCK, ">$out") || die "could not open output file $out $!\n";
 
       print BLOCK (formatAln($fullAln,uc($out_format)));
