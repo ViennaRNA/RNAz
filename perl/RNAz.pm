@@ -91,7 +91,7 @@ sub readMAF{
       my $end=$start+$length; # WRONG if on minus strand. see maf format specs@ucsc
       
       $seq =~ s/\./-/g;
-      
+      # print "start: $start end: $end length: $length\n";  
       my $row = {name       => $name,
 		 start      => $start,
 		 end        => $end,
@@ -201,7 +201,8 @@ sub formatAln{
     my $pos='';
     
     if (defined $start and defined $end){
-      $pos="/$start-$end";
+      #$pos="/$start-$end";
+      $pos="/".$start."-".$end;
       if (defined $strand){
 	if ($strand eq '+'){
 	  $name.=""; # Don't put _fwd

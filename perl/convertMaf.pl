@@ -24,10 +24,12 @@ my $seqID;
 my $version;
 my $cluster;
 my $out;
+my $off = 1;
 
 GetOptions('seq-id|s=s'   => \$seqID,
 	   'cluster|c'    => \$cluster,
 	   'out|format:s' => \$out,
+           'offset|off:i' => \$off,
 	   'version|v'    => \$version,
 	   'help|h'       => \$help,
 	   'man'          => \$man
@@ -37,10 +39,10 @@ my %out_formats = ("gtf" => '',
 		   "bed" => '');
 
 # Error message: no output format or not exsisting format specified
-die("Please specify a valid output format:\n", join(", ", (sort keys %out_formats)),"\n") unless (defined($out) || exists($out_formats{$out}));
+#die("Please specify a valid output format:\n", join(", ", (sort keys %out_formats)),"\n") unless (defined($out) || exists($out_formats{$out}));
 
 # set the format
-$out_formats{$out} = 1;
+#$out_formats{$out} = 1;
 
 pod2usage(1) if $help;
 pod2usage(-verbose => 2) if $man;
@@ -64,6 +66,7 @@ if ( !defined $fileName ) {
 my $alnCounter = 0;
 
 my $alnFormat = checkFormat($fh); # works only with MAF for now!
+#print "format: $alnFormat\n";
 
 while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
 
@@ -76,76 +79,11 @@ while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
   $alnCounter++;
 
 # Print alignment in clustal format  
-#  print(formatAln($fullAln,"CLUSTAL"));  
+  print(formatAln($fullAln,"CLUSTAL")), last if $alnCounter == $off;  
 
-  # Block length of current alignment
-  my $l = length($fullAln->[0]->{seq});
-  
-  # mean pairwise ID
-  my $meanPairID = meanPairID($fullAln) * 100;
-
-  # prepare data for printing
-  my %add = ("meanPairID"   => [$meanPairID],
-	     "blockNr"      => [$alnCounter],
-	     "block_length" => [$l],
-	     "org_block"    => [sort keys %$orgs],
-	     "nr_org"       => [scalar(keys %$orgs)]);
-  
-  my ($blocks) = &mafToGtf($fullAln,\%add) if $out_formats{"gtf"};
-
-  for my $i (0.. $#$blocks){
-    my ($fields, $attribs) = @{$blocks->[$i]};
-    printGtfFieldsAndAttributes($fields, $attribs,*STDOUT);
-  }
 }
 
 
-sub mafToGtf{
-  my ($fullAln,$add) = @_;
-
-  # reformat attribs: add double quotes
-  foreach my $k (keys %$add){
-    $_ = "\"".$_."\"" foreach @{$add->{$k}};
-  }
-
-  my @block = ();
-  my $id    = "";
-  
-  for my $i (0..$#$fullAln){
-
-    # if sequence on minus strand, the start is relative to end of chromosome
-    my $start = $fullAln->[$i]->{start} + 1;
-    my $end   = $fullAln->[$i]->{start} + $fullAln->[$i]->{length};
-    
-    if ($fullAln->[$i]->{strand} eq "-"){
-      $start = $fullAln->[$i]->{fullLength} - $fullAln->[$i]->{start} - $fullAln->[$i]->{length} + 1;
-      $end   = $fullAln->[$i]->{fullLength} - $fullAln->[$i]->{start};
-    }
-    
-    my %fields = ("chr"        => $fullAln->[$i]->{chrom},
-		  "source"     => "maf",
-		  "type"       => "exon",
-		  "start"      => $start,
-		  "end"        => $end,
-		  "score"      => ".",
-		  "strand"     => $fullAln->[$i]->{strand},
-		  "phase"      => ".",
-		  "attributes" => "");
-    
-
-    # ID of reference sequence
-    # do this once for first line in block ($i==0)
-    $id = join("_",$fields{chr},$start,$end) if ($i == 0);
-
-    my %attribs = %$add;
-    $attribs{org}->[0]           = "\"".$fullAln->[$i]->{org}."\"";
-    $attribs{gene_id}->[0]       = "\"".$id."\"";
-    $attribs{transcript_id}->[0] = "\"".$id."\"";
-    
-    push(@block,[\%fields, \%attribs]);
-  }
-  return(\@block);
-}
 
 
 __END__

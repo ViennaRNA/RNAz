@@ -188,7 +188,7 @@ while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
 
     #	print "BEFORE:\n";
     #	print(formatAln($slice,"CLUSTAL"));
-
+    
     if ($refSeq) {
       my $numGaps = ( $slice->[0]->{seq} =~ tr/-./-/ );
 
