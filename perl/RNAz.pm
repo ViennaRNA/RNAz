@@ -79,16 +79,22 @@ sub readMAF{
   
   foreach my $i (0..$#input){
     
-    $_=$input[$i];
+    $_ = $input[$i];
     
     next if (/^\s?\#/);
     next if (/^\s?a/);
     
     if (/^\s?s/) {
-      (my $dummy, my $name, my $start, my $length,
-       my $strand, my $fullLength, my $seq)=split;
+      my ($dummy, $name, $start, $length,
+	  $strand, $fullLength, $seq)    = split;
       
-      my $end=$start+$length; # WRONG if on minus strand. see maf format specs@ucsc
+      my $end = $start + $length; # WRONG if on minus strand. see maf format specs@ucsc
+
+      # new by at: positions on minus strand
+      if ($strand eq "-"){
+	$start = $fullLength-($start+$length);
+	$end   = $fullLength-$start;
+      }
       
       $seq =~ s/\./-/g;
       # print "start: $start end: $end length: $length\n";  
@@ -211,13 +217,10 @@ sub formatAln{
 	}
       }
     }
-    
     push @alnNames, "$name$pos";
     push @alnSeqs, $row->{seq};
-    
-  }
-  
-  
+   }
+   
   my $output='';
   
   if ($format eq 'clustal'){
@@ -268,32 +271,24 @@ sub formatAln{
 
 sub getNextAln{
 
-  my $format=shift;
+  my ($format, $fh) = @_;
+  $fh = *STDIN unless defined($fh);
+  
+  $format = uc($format);
+
+  my $last;
+  $last = "^a"       if ($format eq "MAF");
+  $last = "^CLUSTAL" if ($format eq "CLUSTAL");
+    
   my $out='';
-
-  my $fh=shift;
-  if (!defined $fh){
-	$fh=*STDIN;
-  }
-
-  $format=uc($format);
-
+  
   while (<$fh>){
-	if ($format eq "MAF"){
-	  last if /^a/;
-	}
-	if ($format eq "CLUSTAL"){
-	  last if /CLUSTAL/;
-	}
-
-	$out.=$_;
-	
-	last if eof; #seems to be necessary if <> does not read from stdin
-                 #but from real file given without "<" at the
-                 #commandline
+    last if /$last/;
+    $out .= $_;
+    last if eof; #seems to be necessary if <> does not read from stdin
+                 #but from real file given without "<" at the commandline
   }
   return $out;
-
 }
 
 
@@ -309,7 +304,6 @@ sub parseAln{
   return readClustal($string) if $format eq "CLUSTAL";
 
   return [];
-
 }
 
 ######################################################################
@@ -577,51 +571,52 @@ sub rangeWarn{
 
   my @aln=@{$_[0]};
 
-  my $lengthWarn=0;
-  my $compWarn=0;
+  my ($lengthWarn, $compWarn);
 
+  my %limits = ("GC"     => [0.25, 0.75],
+		"A"      => [0.25, 0.75],
+		"C"      => [0.25, 0.75],
+		"length" => [50,   400]);
+  
+  # The bases - N is not in this set!
+  my @alphabet = (A,G,C,T,U);
+  
   foreach my $row (@aln){
 
-	my $seq=$row->{seq};
-
-	$seq=uc($seq);
-
-	$seq=~s/-//g;
-	$seq=~s/\.//g;
-
-	my $length=length($seq);
-
-	return 1 if ($length==0);
-
-	my $g=($seq=~tr/G/G/);
-	my $c=($seq=~tr/C/C/);
-	my $a=($seq=~tr/A/A/);
-	my $t=($seq=~tr/T/T/);
-	my $u=($seq=~tr/U/U/);
-
-	$t+=$u;
-	
-	my $GC=($g+$c)/$length;
-
-	
-	my $A=0;
-	my $C=0;
-	
-	if (($t+$a)>0 and ($g+$c)>0){
-	  $A=$a/($t+$a);
-	  $C=$c/($g+$c);
-	}
-	$lengthWarn=1 if ($length<50 or $length>400);
-
-	$compWarn=1 if ($GC<0.25 or $GC>0.75);
-	$compWarn=1 if ($A<0.25 or $A>0.75);
-	$compWarn=1 if ($C<0.25 or $C>0.75);
-
+    my $seq = $row->{seq};
+    $seq    = uc($seq);
+    $seq    =~ s/[-.]+//g;
+    
+    my $length = length($seq);
+    return 1 if $length;
+    
+    my %nt = ();
+    foreach my $char (@alphabet){
+      $nt{$char} = () = ($seq =~ /$char/g);
+    }
+    
+    $nt{T} += $nt{U};
+    
+    my $GC = ($nt{G}+$nt{C})/$length;
+    
+    my $A = 0;
+    my $C = 0;
+    
+    if ( (($nt{T}+$nt{A})>0) && (($nt{G}+$nt{C})>0) ){
+      $A = $nt{A} / ($nt{T}+$nt{A});
+      $C = $nt{C} / ($nt{G}+$nt{C});
+    }
+    
+    $lengthWarn = 1 if ($length < $limits{length}->[0]  || $length > $limits{length}->[1]);
+    
+    $compWarn   = 1	if ((  $GC < $limits{GC}->[0] || $GC > $limits{GC}->[1])
+			    || ($A < $limits{A}->[0]  || $A  > $limits{A}->[1] )
+			    || ($C < $limits{C}->[0]  || $C  > $limits{C}->[1]));
   }
-
-  return 3 if ($compWarn==1 and $lengthWarn==1);
-  return 1 if ($lengthWarn==1);
-  return 2 if ($compWarn==1);
+  
+  return 3 if ($compWarn && $lengthWarn);
+  return 1 if $lengthWarn;
+  return 2 if $compWarn;
 
   return 0;
 
@@ -698,7 +693,7 @@ sub meanPairID{
   for my $i (0..$#aln){
     for my $j ($i+1..$#aln){
       for my $k (0..(@{$aln[0]}-1)){
-	if (($aln[$i][$k] ne '-') or ($aln[$j][$k] ne '-')){
+	if (($aln[$i][$k] ne '-') || ($aln[$j][$k] ne '-')){
 	  if ($aln[$i][$k] eq $aln[$j][$k]){
 	    $matches++;
 	  }
@@ -720,147 +715,148 @@ sub meanPairID{
 
 sub pruneAln{
 
-  my %args = (maxN=>6,
-			  minN=>2,
-			  optSim => 0.8,
-			  keepfirst=> 1,
-			  maxID=> 0.95,
-			  numAln=>1,
-			  verbose=>0,
-			  @_);
+  # Default settings for slicing,
+  # overwritten by  user specified params in @_
+  my %args = (maxN      => 6,
+	      minN      => 2,
+	      optSim    => 0.8,
+	      keepfirst => 1,
+	      maxID     => 0.95,
+	      numAln    => 1,
+	      verbose   => 0,
+	      @_);
+  
+  my $maxN      = $args{maxN};
+  my $minN      = $args{minN};
+  my $optSim    = $args{optSim};
+  my $keepfirst = $args{keepfirst};
+  my $maxID     = $args{maxID};
+  my $verbose   = $args{verbose};
+  my $numAln    = $args{numAln};
 
-  my $maxN=$args{maxN};
-  my $minN=$args{minN};
-  my $optSim=$args{optSim};
-  my $keepfirst=$args{keepfirst};
-  my $maxID=$args{maxID};
-  my $verbose=$args{verbose};
-  my $numAln=$args{numAln};
-
-  my @aln=@{$args{alnRef}};
-  my $N=@aln;
-
-  my @outAlns=();
+  my @aln     = @{$args{alnRef}};
+  my $N       = @aln;
+  my @outAlns = ();
 
   my $remove = sub {
-	my $i = shift;
-	warn "broken entry $i aln: %{$aln[$i]}" if !exists($aln[$i]->{name});
-	$aln[$i]->{dead} = 1;
-	print "removing $i:$aln[$i]->{name}\n" if $verbose;
+    my $i = shift;
+    warn "broken entry $i aln: %{$aln[$i]}" if !exists($aln[$i]->{name});
+    $aln[$i]->{dead} = 1;
+    print "removing $i:$aln[$i]->{name}\n" if $verbose;
   };
 
   my $alive =sub {
-	my $i = shift;
-	return $aln[$i]->{dead}?0:1;
+    my $i = shift;
+    return $aln[$i]->{dead}?0:1;
   };
 
   # Calculate matrix of pairwise identities
   my @idMatrix=();
   foreach my $i (0..$N-1) {
-	foreach my $j (0..$N-1) {
-	  next if $j==$i;
-	  my $seq1=$aln[$i]->{seq};
-	  my $seq2=$aln[$j]->{seq};
-
-	  $idMatrix[$i][$j]=$idMatrix[$j][$i]=
-		meanPairID([{'seq'=>$seq1},{'seq'=>$seq2}]);
-	}
+    foreach my $j (0..$N-1) {
+      next if $j == $i;
+      my $seq1 = $aln[$i]->{seq};
+      my $seq2 = $aln[$j]->{seq};
+      
+      $idMatrix[$i][$j]=$idMatrix[$j][$i]=
+	  meanPairID([{'seq'=>$seq1},{'seq'=>$seq2}]);
+    }
   }
 
-  if ($verbose>1) {
-	foreach my $i (0..$#idMatrix-1) {
-	  print $aln[$i]->{name},":\n--------\n";
-	  foreach my $j ($i+1..@{$idMatrix[$i]}-1) {
-		#print $idMatrix[$i][$j], "  ";
-		print "$aln[$j]->{name}: $idMatrix[$i][$j]\n";
-	  }
-	  print "\n";
-	}
+  if ($verbose > 1) {
+    foreach my $i (0..$#idMatrix-1) {
+      print $aln[$i]->{name},":\n--------\n";
+      foreach my $j ($i+1..@{$idMatrix[$i]}-1) {
+	#print $idMatrix[$i][$j], "  ";
+	print "$aln[$j]->{name}: $idMatrix[$i][$j]\n";
+      }
+      print "\n";
+    }
   }
-
+  
   my @used = (0) x @aln;
 
   for my $alnid (1..$numAln) {
-	my $Nalive = $N;
-
-	# Step 1: remove (almost) identical sequences
-	foreach my $i (0..$N-1) {
-	  next unless &$alive($i);
-	  foreach my $j ($i+1..$N-1) {
-		next unless &$alive($j);
-		if ($idMatrix[$i][$j]>$maxID) {
-		  print "$i,$j:$idMatrix[$i][$j] " if $verbose;
-		  # remove one of the 2 seqs, prefer the one that's been used more often
-		  my $r = (rand()*($used[$i]+$used[$j])<$used[$i]) ? $i : $j;
-		  $r = $j if $keepfirst && ($i==0);
-		  $Nalive--;
-		  last if $Nalive<$minN;
-		  &$remove($r);
-		  last if $r==$i;
-		}
+    my $Nalive = $N;
+    
+    # Step 1: remove (almost) identical sequences
+    foreach my $i (0..$N-1) {
+      next unless &$alive($i);
+      foreach my $j ($i+1..$N-1) {
+	next unless &$alive($j);
+	if ($idMatrix[$i][$j]>$maxID) {
+	  print "$i,$j:$idMatrix[$i][$j] " if $verbose;
+	  # remove one of the 2 seqs, prefer the one that's been used more often
+	  my $r = (rand()*($used[$i]+$used[$j]) < $used[$i]) ? $i : $j;
+	  $r = $j if $keepfirst && ($i==0);
+	  $Nalive--;
+	  last if $Nalive < $minN;
+	  &$remove($r);
+	  last if $r == $i;
+	}
+      }
+    }
+    
+    if ($alnid>1) {
+      # Step 2: pre-select sequence to get several different samples.
+      # We remove ($N-$maxN)/2 of the already used sequences.
+      # choose sequences to be removed with probability
+      # proportional to the number of times they've been used.
+      my $s = 0;
+      foreach (@used) {$s += $_};
+      $s -= $used[0] if $keepfirst;
+      print "going to preremove int(($Nalive-$maxN)/2) seqs\n" 
+	  if $verbose;
+      for my $i (1..int(($Nalive-$maxN)/2)) {
+	my $r = rand($s);
+	my $ss=0;
+	for my $a ($keepfirst .. $#aln) {
+	  next unless &$alive($a);
+	  $ss += $used[$a];
+	  if ($ss>$r) {
+	    print "next aln " if $verbose;
+	    &$remove($a); $Nalive--;
+	    $s -= $used[$a];
+	    last;
 	  }
 	}
-
-	if ($alnid>1) {
-	  # Step 2: pre-select sequence to get several different samples.
-	  # We remove ($N-$maxN)/2 of the already used sequences.
-	  # choose sequences to be removed with probability
-	  # proportional to the number of times they've been used.
-	  my $s = 0;
-	  foreach (@used) {$s += $_};
-	  $s -= $used[0] if $keepfirst;
-	  print "going to preremove int(($Nalive-$maxN)/2) seqs\n" 
-		if $verbose;
-	  for my $i (1..int(($Nalive-$maxN)/2)) {
-		my $r = rand($s);
-		my $ss=0;
-		for my $a ($keepfirst .. $#aln) {
-		  next unless &$alive($a);
-		  $ss += $used[$a];
-		  if ($ss>$r) {
-			print "next aln " if $verbose;
-			&$remove($a); $Nalive--;
-			$s -= $used[$a];
-			last;
-		  }
-		}
-	  }
+      }
+    }
+    # Step 3: Optimize mean pairwise similarity (greedily)
+    # remove worst sequence until desired number is reached
+    while ($Nalive > $maxN) {
+      my $maxcost=0;
+      my $maxind;
+      foreach my $i (0..$N-1) {
+	next unless &$alive($i);
+	next if $i==0 && $keepfirst; # never delete seq 0
+	my $cost = 0;
+	foreach my $j (0..$N-1) {
+	  next if $i==$j;
+	  $cost += ($idMatrix[$i][$j]-$optSim)*($idMatrix[$i][$j]-$optSim);
 	}
-	# Step 3: Optimize mean pairwise similarity (greedily)
-	# remove worst sequence until desired number is reached
-	while ($Nalive > $maxN) {
-	  my $maxcost=0;
-	  my $maxind;
-	  foreach my $i (0..$N-1) {
-		next unless &$alive($i);
-		next if $i==0 && $keepfirst; # never delete seq 0
-		my $cost = 0;
-		foreach my $j (0..$N-1) {
-		  next if $i==$j;
-		  $cost += ($idMatrix[$i][$j]-$optSim)*($idMatrix[$i][$j]-$optSim);
-		}
-		($maxcost,$maxind) = ($cost,$i) if $cost>$maxcost;
-	  }
-	  &$remove($maxind); $Nalive--;
-	}
-
-	#  my @newaln = grep {!$_->{dead}} @aln;
-	my @newaln;
-	foreach my $row (@aln) {
-	  # need to do a deep copy here, else we'll modify the original aln
-	  push @newaln, {name=>$row->{name},
-					 seq=>$row->{seq},
-					 start=>$row->{start},
-					 end=>$row->{end},
-					 chrom=>$row->{chrom},
-					 org=>$row->{org},
-					 strand=>$row->{strand},
-					 fullLength=>$row->{fullLength}
-					} unless $row->{dead};
-	}
-
-	removeCommonGaps(\@newaln);
-
+	($maxcost,$maxind) = ($cost,$i) if $cost>$maxcost;
+      }
+      &$remove($maxind); $Nalive--;
+    }
+    
+    #  my @newaln = grep {!$_->{dead}} @aln;
+    my @newaln;
+    foreach my $row (@aln) {
+      # need to do a deep copy here, else we'll modify the original aln
+      push @newaln, {name       => $row->{name},
+		     seq        => $row->{seq},
+		     start      => $row->{start},
+		     end        => $row->{end},
+		     chrom      => $row->{chrom},
+		     org        => $row->{org},
+		     strand     => $row->{strand},
+		     fullLength => $row->{fullLength}
+      } unless $row->{dead};
+    }
+    
+    removeCommonGaps(\@newaln);
+    
 	#print formatAln(\@newaln,"CLUSTAL");
 
 	push @outAlns, [@newaln];
