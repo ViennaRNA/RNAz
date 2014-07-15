@@ -142,7 +142,7 @@ foreach my $fileNr (keys %data ){
     next if scalar(@$fullAln) < 2;
     
     $alnCounter++;
-    print "$alnCounter\n";
+#    print "$alnCounter\n";
     
     # Print alignment in clustal format
     if ($filepos[0] == $alnCounter){

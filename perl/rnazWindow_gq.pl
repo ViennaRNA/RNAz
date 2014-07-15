@@ -113,6 +113,10 @@ while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
   my $sliceEnd       = 0;
   my $length         = length( $fullAln->[0]->{seq} );
 
+  # set window size to length of alignment
+  
+  $window = $length+1;
+  
   if ( $length <= $maxLength ) {
     $window = $length;
   }
@@ -192,14 +196,14 @@ while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
     if ($refSeq) {
       my $numGaps = ( $slice->[0]->{seq} =~ tr/-./-/ );
 
-      if ( $numGaps / $sliceLength > $maxGap ) {
-        $slice->[0] = undef;
-
-        if ($verbose) {
-          print STDERR
-            "Alignment $alnCounter, window $windowCounter: Removing seq 1: too many gaps.\n";
-        }
-      } else {
+ #     if ( $numGaps / $sliceLength > $maxGap ) {
+ #       $slice->[0] = undef;
+ #
+ #       if ($verbose) {
+ #         print STDERR
+ #           "Alignment $alnCounter, window $windowCounter: Removing seq 1: too many gaps.\n";
+ #       }
+ #     } else {
 
         for my $i ( 1 .. @$slice - 1 ) {
 
@@ -212,27 +216,27 @@ while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
 
           my $tmpLength = length( $tmpAln[0]->{seq} );
 
-          if ( ( $numGaps0 + $numGaps1 ) / $tmpLength > $maxGap ) {
-            $slice->[$i] = undef;
-            if ($verbose) {
-              my $ii = $i + 1;
-              print STDERR
-                "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too many gaps.\n";
-            }
-          }
+#          if ( ( $numGaps0 + $numGaps1 ) / $tmpLength > $maxGap ) {
+#            $slice->[$i] = undef;
+#            if ($verbose) {
+#              my $ii = $i + 1;
+#              print STDERR
+#                "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too many gaps.\n";
+#            }
+#          }
         }
-      }
+#      }
     } else {
       for my $i ( 0 .. @$slice - 1 ) {
         my $numGaps = ( $slice->[$i]->{seq} =~ tr/-./-/ );
-        if ( $numGaps / $sliceLength > $maxGap ) {
-          $slice->[$i] = undef;
-          if ($verbose) {
-            my $ii = $i + 1;
-            print STDERR
-              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too many gaps.\n";
-          }
-        }
+#        if ( $numGaps / $sliceLength > $maxGap ) {
+#          $slice->[$i] = undef;
+#          if ($verbose) {
+#            my $ii = $i + 1;
+#            print STDERR
+#              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too many gaps.\n";
+#          }
+#        }
       }
     }
 
@@ -249,31 +253,31 @@ while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
       }
     }
 
-    for my $i ( 0 .. @$slice - 1 ) {
-      next if not defined $slice->[$i];
-      my $tmpSeq = $slice->[$i]->{seq};
-
-      #print $tmpSeq, ":",rangeWarn([{seq=>$tmpSeq}]),"\n";
-      my $warning = rangeWarn( [ { seq => $tmpSeq } ] );
-      if ($warning) {
-        $slice->[$i] = undef;
-        if ($verbose) {
-          my $ii = $i + 1;
-          if ( $warning == 1 ) {
-            print STDERR
-              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too short.\n";
-          }
-          if ( $warning == 2 ) {
-            print STDERR
-              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: base composition out of range.\n";
-          }
-          if ( $warning == 3 ) {
-            print STDERR
-              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: base composition out of range/too short.\n";
-          }
-        }
-      }
-    }
+#    for my $i ( 0 .. @$slice - 1 ) {
+#      next if not defined $slice->[$i];
+#      my $tmpSeq = $slice->[$i]->{seq};
+#
+#      #print $tmpSeq, ":",rangeWarn([{seq=>$tmpSeq}]),"\n";
+#      my $warning = rangeWarn( [ { seq => $tmpSeq } ] );
+#      if ($warning) {
+##        $slice->[$i] = undef;
+#        if ($verbose) {
+#          my $ii = $i + 1;
+#          if ( $warning == 1 ) {
+#            print STDERR
+#              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too short.\n";
+#          }
+#          if ( $warning == 2 ) {
+#            print STDERR
+#              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: base composition out of range.\n";
+#          }
+#          if ( $warning == 3 ) {
+#            print STDERR
+#              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: base composition out of range/too short.\n";
+#          }
+#        }
+#      }
+#    }
 
     my @tmp;
     foreach (@$slice) {
