@@ -18,6 +18,7 @@ our @EXPORT = qw(checkFormat
 		 readClustal
 		 parseAln
 		 sliceAlnByColumn
+		 sliceAlnByPos
 		 alnCol2genomePos
 		 removeCommonGaps
 		 rangeWarn
@@ -386,7 +387,7 @@ sub sliceAlnByPos{
 	push @newAln,{%{$_}};
   }
 
-  print "Start:$start, end:$end\n";
+#  print "Start:$start, end:$end\n";
 
   my ($colStart, $colEnd);
 
@@ -579,7 +580,7 @@ sub rangeWarn{
 		"length" => [50,   400]);
   
   # The bases - N is not in this set!
-  my @alphabet = (A,G,C,T,U);
+  my @alphabet = ("A","G","C","T","U");
   
   foreach my $row (@aln){
 
@@ -595,23 +596,23 @@ sub rangeWarn{
       $nt{$char} = () = ($seq =~ /$char/g);
     }
     
-    $nt{T} += $nt{U};
+    $nt{"T"} += $nt{"U"};
     
-    my $GC = ($nt{G}+$nt{C})/$length;
+    my $GC = ($nt{"G"}+$nt{"C"})/$length;
     
     my $A = 0;
     my $C = 0;
     
-    if ( (($nt{T}+$nt{A})>0) && (($nt{G}+$nt{C})>0) ){
-      $A = $nt{A} / ($nt{T}+$nt{A});
-      $C = $nt{C} / ($nt{G}+$nt{C});
+    if ( (($nt{"T"}+$nt{"A"})>0) && (($nt{"G"}+$nt{"C"})>0) ){
+      $A = $nt{"A"} / ($nt{"T"}+$nt{"A"});
+      $C = $nt{"C"} / ($nt{"G"}+$nt{"C"});
     }
     
     $lengthWarn = 1 if ($length < $limits{length}->[0]  || $length > $limits{length}->[1]);
     
-    $compWarn   = 1	if ((  $GC < $limits{GC}->[0] || $GC > $limits{GC}->[1])
-			    || ($A < $limits{A}->[0]  || $A  > $limits{A}->[1] )
-			    || ($C < $limits{C}->[0]  || $C  > $limits{C}->[1]));
+    $compWarn   = 1	if ((  $GC < $limits{"GC"}->[0] || $GC > $limits{"GC"}->[1])
+			    || ($A < $limits{"A"}->[0]  || $A  > $limits{"A"}->[1] )
+			    || ($C < $limits{"C"}->[0]  || $C  > $limits{"C"}->[1]));
   }
   
   return 3 if ($compWarn && $lengthWarn);
