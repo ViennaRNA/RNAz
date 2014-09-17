@@ -143,6 +143,7 @@ foreach my $fileNr (keys %files ){
     
     # Make a slice for each gquad that lies within the current aln block
     foreach my $gqID (@{$files{$fileNr}{$filepos[0]}}){
+    $sliceID++;
 #      print "$fileNr $filepos[0] $gqID \n";
       
       # Description of slices
@@ -169,7 +170,7 @@ foreach my $fileNr (keys %files ){
       
       
       # Print slice
-      my $sliceOut = join(".", $prefix, $gqID, "aln");
+      my $sliceOut = join(".", $prefix, $sliceID, "aln");
       open(SLICE, ">$sliceOut") || die "could not open output file $sliceOut $!\n";
       print SLICE (formatAln( $slice, uc($out_format) ));
       close(SLICE);
