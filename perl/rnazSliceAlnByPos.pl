@@ -92,8 +92,11 @@ close(IS);
 # --------------------------------------------------
 
 # open GTF output
-my $sliceGQlocal = join(".",$prefix,"local_gquad2","gtf");
-open(GTF, ">$sliceGQlocal") || die "could not open gtf out file $sliceGQlocal $!\n";
+my $sliceGQlocal = join(".",$prefix,"gquad_local","gtf");
+open(GQGTF, ">$sliceGQlocal") || die "could not open gtf out file $sliceGQlocal $!\n";
+
+my $sliceout = join(".",$prefix,"slice","gtf");
+open(SGTF, ">$sliceout") || die "could not open gtf out file $sliceout $!\n";
 
 
 my $sliceID = 0;
@@ -123,19 +126,18 @@ foreach my $fileNr (keys %files ){
     # Process curent alignment block
     # --------------------------------------------------
     
-    my ($fullAln) = parseAln( $alnString, $alnFormat);
+    my ($fullAln, $orgs) = parseAln( $alnString, $alnFormat, "1");
     
-    # only reference species in alignment
     
 #    print formatAln( $fullAln, uc($out_format));
     
+    # only reference species in alignment
     next if scalar(@$fullAln) < 2;
-    $alnCounter++;
+
+    $alnCounter++;      # no. of alignment block in file
     
     # Check if current aln block needs processing
     next unless ($filepos[0] == $alnCounter);
-    
-    $sliceID++;
     
 #    my @tmp = ();
 #    foreach (@$fullAln) {
@@ -153,7 +155,7 @@ foreach my $fileNr (keys %files ){
     # get this from intersection file
     my $sliceStart  = ($gqs{$gqID}[0]->{start}) - $flank;
     my $sliceEnd    = $gqs{$gqID}[0]->{end}   + $flank;
-    my $sliceLength = $sliceEnd - $sliceStart +1;
+
     my $alnStart    = $gqs{$gqID}[2]->{start};
     my $alnEnd      = $gqs{$gqID}[2]->{end};
     my $alnLength   = length( $fullAln->[0]->{seq} );
@@ -163,14 +165,27 @@ foreach my $fileNr (keys %files ){
     $sliceStart = $alnStart if ($alnStart > $sliceStart);
     $sliceEnd   = $alnEnd   if ($alnEnd   < $sliceEnd);
 
+    my $sliceLength = $sliceEnd - $sliceStart +1;
+
     if ($slicing){
       # name of reference sequence
       my $refName = $fullAln->[0]->{name};
       
       # my $sliceCol = sliceAlnByColumn($fullAln,$sliceStart,$sliceEnd);
       my $slice = sliceAlnByPos($fullAln,"0",($sliceStart-1),$sliceEnd);
+
+
+      # remove emty lines and common gaps in slice
+      &removeEmptyAlnLines($slice, $sliceLengt);
+      removeCommonGaps( $slice );
       
+      # slice has only RefSeq or only one seq
+      $sliceID--, next unless ( exists($slice->[1])  || ($refNam ne $slice->[0]->{name}));
       
+      # mean pairwise ID
+      my $meanPairID = meanPairID($slice) * 100;
+
+
       # Print slice
       my $sliceOut = join(".", $prefix, $sliceID, "aln");
       open(SLICE, ">$sliceOut") || die "could not open output file $sliceOut $!\n";
@@ -187,19 +202,50 @@ foreach my $fileNr (keys %files ){
     my $localStart = $gqs{$gqID}[0]->{start} - $sliceStart   +1;
     my $localEnd   = $localStart + $gqLength -1;
     
-    my %fields = ("chr"        => $sliceID,
-		  "source"     => "gquad",
-		  "type"       => "exon",
-		  "start"      => $localStart,
-		  "end"        => $localEnd,
-		  "score"      => ".",
-		  "strand"     => $gqs{$gqID}[0]->{strand},
-		  "phase"      => ".",
-		  "attributes" => (join(" ","gene_id","\"".$sliceID."\";",
-					"transcript_id","\"".$gqID."\";",
-					"blockNr",      $gqs{$gqID}[3]->{blockNr}->[0]))
+    my %gqfields = ("chr"        => $sliceID,
+		    "source"     => "gquad",
+		    "type"       => "exon",
+		    "start"      => $localStart,
+		    "end"        => $localEnd,
+		    "score"      => ".",
+		    "strand"     => $gqs{$gqID}[0]->{strand},
+		    "phase"      => ".",
+		    "attributes" => (join(" ","gene_id","\"".$sliceID."\";",
+					  "transcript_id","\"".$gqID."\";",
+					  "blockNr",      $gqs{$gqID}[3]->{blockNr}->[0]))
 	);
-    printGtfFields( \%fields,*GTF);
+    printGtfFields( \%gqfields,*GQGTF);
+
+
+    # Print slice annotation
+
+    my %sliceattribs = ("gene_id",       => [$sliceID],
+			"transcript_id"  => [$sliceID],
+			"meanPairID"	 => [$meanPairID],
+			"blockNr"	 => [$gqs{$gqID}[3]->{blockNr}->[0]],
+			"slice_length"	 => [$sliceLength],
+			"org_block"	 => [sort keys %$orgs],
+			"nr_org"	 => [scalar(keys %$orgs)]);
+
+    foreach my $k (keys %sliceattribs){
+      $_ = "\"".$_."\"" foreach (@{$sliceattribs{$k}});
+    }
+        
+    my %slicefields = ("chr"        => ,
+		       "source"     => "slice",
+		       "type"       => "exon",
+		       "start"      => $sliceStart,
+		       "end"        => $sliceEnd,
+		       "score"      => ".",
+		       "strand"     => $gqs{$gqID}[0]->{strand},
+		       "phase"      => ".",
+		       "attributes" => ""
+	);
+    printGtfFieldsAndAttributes( \%slicefields, %sliceattribs, *SGTF);
+
+
+
+    
     
     } # done with all gqIDs in current maf block
     
@@ -210,4 +256,21 @@ foreach my $fileNr (keys %files ){
   close($fh);
 }
 
-close(GTF);
+close(GQGTF);
+close(SGTF);
+
+
+
+# --------------------------------------------------
+# Subfunctions
+# --------------------------------------------------
+
+
+sub removeEmptyAlnLines{
+  my ($slice, $sliceLength) = @_;
+
+  for (my $i=0; $i<=$#$slice; $i++) {
+    my $numGaps = ( $slice->[$i]->{seq} =~ tr/-./-/ );
+    splice(@$slice,$i,1), $i-- if ( $numGaps == $sliceLength );
+  }
+}
