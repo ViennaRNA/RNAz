@@ -167,31 +167,30 @@ foreach my $fileNr (keys %files ){
 
     my $sliceLength = $sliceEnd - $sliceStart +1;
 
-    if ($slicing){
-      # name of reference sequence
-      my $refName = $fullAln->[0]->{name};
-      
-      # my $sliceCol = sliceAlnByColumn($fullAln,$sliceStart,$sliceEnd);
-      my $slice = sliceAlnByPos($fullAln,"0",($sliceStart-1),$sliceEnd);
-
-
-      # remove emty lines and common gaps in slice
-      &removeEmptyAlnLines($slice, $sliceLengt);
-      removeCommonGaps( $slice );
-      
-      # slice has only RefSeq or only one seq
-      $sliceID--, next unless ( exists($slice->[1])  || ($refNam ne $slice->[0]->{name}));
-      
-      # mean pairwise ID
-      my $meanPairID = meanPairID($slice) * 100;
-
-
-      # Print slice
-      my $sliceOut = join(".", $prefix, $sliceID, "aln");
-      open(SLICE, ">$sliceOut") || die "could not open output file $sliceOut $!\n";
-      print SLICE (formatAln( $slice, uc($out_format) ));
-      close(SLICE);
-    }
+    # name of reference sequence
+    my $refName = $fullAln->[0]->{name};
+    
+    # my $sliceCol = sliceAlnByColumn($fullAln,$sliceStart,$sliceEnd);
+    my $slice = sliceAlnByPos($fullAln,"0",($sliceStart-1),$sliceEnd);
+    
+    
+    # remove emty lines and common gaps in slice
+    &removeEmptyAlnLines($slice, $sliceLength);
+    removeCommonGaps( $slice );
+    
+    # slice has only RefSeq or only one seq
+    $sliceID--, next unless ( (exists($slice->[0]) && exists($slice->[1]))  || ($refName ne $slice->[0]->{name}));
+    
+    # mean pairwise ID
+    my $meanPairID = meanPairID($slice) * 100;
+    
+    
+    # Print slice
+    my $sliceOut = join(".", $prefix, $sliceID, "aln");
+    open(SLICE, ">$sliceOut") || die "could not open output file $sliceOut $!\n";
+    print SLICE (formatAln( $slice, uc($out_format) ));
+    close(SLICE);
+    
 
     # Print annotation of gquad - local gap free coordinates
     # = local coordinates of gquad within reference sequence
