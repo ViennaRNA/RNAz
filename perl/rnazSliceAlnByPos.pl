@@ -22,14 +22,15 @@ my $flank = 100;            # flanking region
 my $alnFormat  = "MAF";     # input aln format
 my $out_format = "CLUSTAL"; # output aln format
 my $file_size  = 100;       # flanking regions [nt]
-
+my $slicing;                # slice if defined
 
 GetOptions(
   'is:s'	   => \$is_file,
   'mafin|maf:s'	   => \$pre_mafin,
   'out|o:s'	   => \$prefix,
   'flank|f:i'	   => \$flank,
-  'outformat|of:s' => \$out_format
+  'outformat|of:s' => \$out_format,
+  'slicing|sl'     => \$slicing
     );
 
 # Known output formats
@@ -91,7 +92,7 @@ close(IS);
 # --------------------------------------------------
 
 # open GTF output
-my $sliceGQlocal = join(".",$prefix,"local_gquad","gtf");
+my $sliceGQlocal = join(".",$prefix,"local_gquad2","gtf");
 open(GTF, ">$sliceGQlocal") || die "could not open gtf out file $sliceGQlocal $!\n";
 
 
@@ -146,22 +147,23 @@ foreach my $fileNr (keys %files ){
     $sliceID++;
 #      print "$fileNr $filepos[0] $gqID \n";
       
-      # Description of slices
-      # --------------------------------------------------
-      
-      # get this from intersection file
-      my $sliceStart  = ($gqs{$gqID}[0]->{start}) - $flank;
-      my $sliceEnd    = $gqs{$gqID}[0]->{end}   + $flank;
-      my $sliceLength = $sliceEnd - $sliceStart +1;
-      my $alnStart    = $gqs{$gqID}[2]->{start};
-      my $alnEnd      = $gqs{$gqID}[2]->{end};
-      my $alnLength   = length( $fullAln->[0]->{seq} );
-      
-      # check if either side of slice is within range of aln block
-      # if not, adjust to aln coords
-      $sliceStart = $alnStart if ($alnStart > $sliceStart);
-      $sliceEnd   = $alnEnd   if ($alnEnd   < $sliceEnd);
-      
+    # Description of slices
+    # --------------------------------------------------
+    
+    # get this from intersection file
+    my $sliceStart  = ($gqs{$gqID}[0]->{start}) - $flank;
+    my $sliceEnd    = $gqs{$gqID}[0]->{end}   + $flank;
+    my $sliceLength = $sliceEnd - $sliceStart +1;
+    my $alnStart    = $gqs{$gqID}[2]->{start};
+    my $alnEnd      = $gqs{$gqID}[2]->{end};
+    my $alnLength   = length( $fullAln->[0]->{seq} );
+    
+    # check if either side of slice is within range of aln block
+    # if not, adjust to aln coords
+    $sliceStart = $alnStart if ($alnStart > $sliceStart);
+    $sliceEnd   = $alnEnd   if ($alnEnd   < $sliceEnd);
+
+    if ($slicing){
       # name of reference sequence
       my $refName = $fullAln->[0]->{name};
       
@@ -174,31 +176,33 @@ foreach my $fileNr (keys %files ){
       open(SLICE, ">$sliceOut") || die "could not open output file $sliceOut $!\n";
       print SLICE (formatAln( $slice, uc($out_format) ));
       close(SLICE);
-      
-      # Print annotation of gquad - local gap free coordinates
-      # = local coordinates of gquad within reference sequence
-      # in bed format = zero-based
-      
-      
-      my $localStart = $sliceStart - $alnStart    +1;
-      my $localEnd   = $localStart + $sliceLength -1;
-      
-      my %fields = ("chr"        => $sliceID,
-		    "source"     => "gquad",
-		    "type"       => "exon",
-		    "start"      => $localStart,
-		    "end"        => $localEnd,
-		    "score"      => ".",
-		    "strand"     => $gqs{$gqID}[0]->{strand},
-		    "phase"      => ".",
-		    "attributes" => (join(" ","gene_id","\"".$sliceID."\";",
-					  "transcript_id","\"".$gqID."\";",
-					  "blockNr",      $gqs{$gqID}[3]->{blockNr}->[0]))
-	  );
-      printGtfFields( \%fields,*GTF);
-            
-    } # done with all gqIDs in current maf block
+    }
 
+    # Print annotation of gquad - local gap free coordinates
+    # = local coordinates of gquad within reference sequence
+    # in bed format = zero-based
+    
+    
+    my $gqLength   = $gqs{$gqID}[0]->{end}   - $gqs{$gqID}[0]->{start} + 1;
+    my $localStart = $gqs{$gqID}[0]->{start} - $sliceStart   +1;
+    my $localEnd   = $localStart + $gqLength -1;
+    
+    my %fields = ("chr"        => $sliceID,
+		  "source"     => "gquad",
+		  "type"       => "exon",
+		  "start"      => $localStart,
+		  "end"        => $localEnd,
+		  "score"      => ".",
+		  "strand"     => $gqs{$gqID}[0]->{strand},
+		  "phase"      => ".",
+		  "attributes" => (join(" ","gene_id","\"".$sliceID."\";",
+					"transcript_id","\"".$gqID."\";",
+					"blockNr",      $gqs{$gqID}[3]->{blockNr}->[0]))
+	);
+    printGtfFields( \%fields,*GTF);
+    
+    } # done with all gqIDs in current maf block
+    
     # done with this aln block -> remove it from list
     shift @filepos;
     last unless defined($filepos[0]); # list if relevant maf blocks is empty. done!
