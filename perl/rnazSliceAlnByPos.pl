@@ -207,7 +207,7 @@ foreach my $fileNr (keys %files ){
     foreach my $k (keys %gqattribs){
       $_ = "\"".$_."\"" foreach (@{$gqattribs{$k}});
     }
-    %gqattribs{"blockNr"} = [$gqs{$gqID}[3]->{blockNr}->[0]];
+    $gqattribs{"blockNr"} = [$gqs{$gqID}[3]->{blockNr}->[0]];
         
     my %gqfields = ("chr"        => $sliceID,
 		    "source"     => "gquad",
@@ -234,7 +234,7 @@ foreach my $fileNr (keys %files ){
     foreach my $k (keys %sliceattribs){
       $_ = "\"".$_."\"" foreach (@{$sliceattribs{$k}});
     }
-    %sliceattribs{"blockNr"} = [$gqs{$gqID}[3]->{blockNr}->[0]];
+    $sliceattribs{"blockNr"} = [$gqs{$gqID}[3]->{blockNr}->[0]];
         
     my %slicefields = ("chr"        => $gqs{$gqID}[0]->{chr},
 		       "source"     => "alnslice",
