@@ -230,7 +230,7 @@ foreach my $fileNr (keys %files ){
       $_ = "\"".$_."\"" foreach (@{$sliceattribs{$k}});
     }
         
-    my %slicefields = ("chr"        => ,
+    my %slicefields = ("chr"        => $gqs{$gqID}[0]->{chr},
 		       "source"     => "slice",
 		       "type"       => "exon",
 		       "start"      => $sliceStart,
