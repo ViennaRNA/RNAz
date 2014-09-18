@@ -200,7 +200,14 @@ foreach my $fileNr (keys %files ){
     my $gqLength   = $gqs{$gqID}[0]->{end}   - $gqs{$gqID}[0]->{start} + 1;
     my $localStart = $gqs{$gqID}[0]->{start} - $sliceStart   +1;
     my $localEnd   = $localStart + $gqLength -1;
-    
+
+    my %gqattribs = ("gene_id"       => [$sliceID],
+		     "transcript_id" => [$gqID],
+		     "blockNr"       => [$gqs{$gqID}[3]->{blockNr}->[0]]);
+    foreach my $k (keys %gqattribs){
+      $_ = "\"".$_."\"" foreach (@{$gqattribs{$k}});
+    }
+        
     my %gqfields = ("chr"        => $sliceID,
 		    "source"     => "gquad",
 		    "type"       => "exon",
@@ -209,11 +216,9 @@ foreach my $fileNr (keys %files ){
 		    "score"      => ".",
 		    "strand"     => $gqs{$gqID}[0]->{strand},
 		    "phase"      => ".",
-		    "attributes" => (join(" ","gene_id","\"".$sliceID."\";",
-					  "transcript_id","\"".$gqID."\";",
-					  "blockNr",      $gqs{$gqID}[3]->{blockNr}->[0]))
+		    "attributes" => ""
 	);
-    printGtfFields( \%gqfields,*GQGTF);
+    printGtfFieldsAndAttributes( \%gqfields, \%gqattribs, *GQGTF);
 
 
     # Print slice annotation
@@ -240,7 +245,7 @@ foreach my $fileNr (keys %files ){
 		       "phase"      => ".",
 		       "attributes" => ""
 	);
-    printGtfFieldsAndAttributes( \%slicefields, %sliceattribs, *SGTF);
+    printGtfFieldsAndAttributes( \%slicefields, \%sliceattribs, *SGTF);
 
 
 
