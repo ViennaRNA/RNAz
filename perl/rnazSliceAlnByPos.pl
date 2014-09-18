@@ -202,11 +202,12 @@ foreach my $fileNr (keys %files ){
     my $localEnd   = $localStart + $gqLength -1;
 
     my %gqattribs = ("gene_id"       => [$sliceID],
-		     "transcript_id" => [$gqID],
-		     "blockNr"       => [$gqs{$gqID}[3]->{blockNr}->[0]]);
+		     "transcript_id" => [$gqID]
+	);
     foreach my $k (keys %gqattribs){
       $_ = "\"".$_."\"" foreach (@{$gqattribs{$k}});
     }
+    %gqattribs{"blockNr"} = [$gqs{$gqID}[3]->{blockNr}->[0]];
         
     my %gqfields = ("chr"        => $sliceID,
 		    "source"     => "gquad",
@@ -226,7 +227,6 @@ foreach my $fileNr (keys %files ){
     my %sliceattribs = ("gene_id",       => [$sliceID],
 			"transcript_id"  => [$sliceID],
 			"meanPairID"	 => [$meanPairID],
-			"blockNr"	 => [$gqs{$gqID}[3]->{blockNr}->[0]],
 			"slice_length"	 => [$sliceLength],
 			"org_block"	 => [sort keys %$orgs],
 			"nr_org"	 => [scalar(keys %$orgs)]);
@@ -234,9 +234,10 @@ foreach my $fileNr (keys %files ){
     foreach my $k (keys %sliceattribs){
       $_ = "\"".$_."\"" foreach (@{$sliceattribs{$k}});
     }
+    %sliceattribs{"blockNr"} = [$gqs{$gqID}[3]->{blockNr}->[0]];
         
     my %slicefields = ("chr"        => $gqs{$gqID}[0]->{chr},
-		       "source"     => "slice",
+		       "source"     => "alnslice",
 		       "type"       => "exon",
 		       "start"      => $sliceStart,
 		       "end"        => $sliceEnd,
