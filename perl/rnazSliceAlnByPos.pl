@@ -135,101 +135,104 @@ foreach my $fileNr (keys %files ){
     
     # Make a slice for each gquad that lies within the current aln block
     foreach my $gqID (@{$files{$fileNr}{$filepos[0]}}){
-    $sliceID++;
+      $sliceID++;
+
+      # make a copy of $fullAln
+      my @tmpAln = @$fullAln;
       
-    # Description of slices
-    # --------------------------------------------------
-    
-    # get this from intersection file
-    my $sliceStart  = ($gqs{$gqID}[0]->{start}) - $flank;
-    my $sliceEnd    = $gqs{$gqID}[0]->{end}   + $flank;
-
-    my $alnStart    = $gqs{$gqID}[2]->{start};
-    my $alnEnd      = $gqs{$gqID}[2]->{end};
-    
-    # check if either side of slice is within range of aln block
-    # if not, adjust to aln coords
-    $sliceStart = $alnStart if ($alnStart > $sliceStart);
-    $sliceEnd   = $alnEnd   if ($alnEnd   < $sliceEnd);
-
-
-    my $slice = sliceAlnByPos($fullAln,"0",($sliceStart-1),$sliceEnd);
-    
-    
-    # remove emty lines and common gaps in slice
-    my $gqLength   = $gqs{$gqID}[0]->{end}   - $gqs{$gqID}[0]->{start} + 1;
-    $slice = &removeEmptyAlnLines($slice, $gqLength);
+      # Description of slices
+      # --------------------------------------------------
+      
+      # get this from intersection file
+      my $sliceStart  = ($gqs{$gqID}[0]->{start}) - $flank;
+      my $sliceEnd    = $gqs{$gqID}[0]->{end}   + $flank;
+      
+      my $alnStart    = $gqs{$gqID}[2]->{start};
+      my $alnEnd      = $gqs{$gqID}[2]->{end};
+      
+      # check if either side of slice is within range of aln block
+      # if not, adjust to aln coords
+      $sliceStart = $alnStart if ($alnStart > $sliceStart);
+      $sliceEnd   = $alnEnd   if ($alnEnd   < $sliceEnd);
+      
+      
+      my $slice = sliceAlnByPos(\@tmpAln,"0",($sliceStart-1),$sliceEnd);
+      
+      
+      # remove emty lines and common gaps in slice
+      my $gqLength   = $gqs{$gqID}[0]->{end}   - $gqs{$gqID}[0]->{start} + 1;
+      $slice = &removeEmptyAlnLines($slice, $gqLength);
 #    removeCommonGaps( $slice );
+      
+      # slice has only RefSeq or only one seq
+      $sliceID--, next if ( scalar(@$slice) < 2 );
+      
+      # mean pairwise ID
+      my $meanPairID = meanPairID($slice) * 100;
+      
+      
+      # Print slice
+      my $sliceOut = join(".", $prefix, $sliceID, "aln");
+      open(SLICE, ">$sliceOut") || die "could not open output file $sliceOut $!\n";
+      print SLICE (formatAln( $slice, $out_format ));
+      close(SLICE);
+      
+      
+      # Print annotation of gquad - local gap free coordinates
+      # = local coordinates of gquad within reference sequence
+      # in bed format = zero-based
+      
+      
+      my $localStart = $gqs{$gqID}[0]->{start} - $sliceStart   +1;
+      my $localEnd   = $localStart + $gqLength -1;
+      
+      my %gqattribs = ("gene_id"       => ["\"".$sliceID."\""],
+		       "transcript_id" => ["\"".$gqID."\""],
+		       "blockNr"       => [$gqs{$gqID}[3]->{blockNr}->[0]]
+	  );
+      
+      my %gqfields = ("chr"        => $sliceID,
+		      "source"     => "gquad",
+		      "type"       => "exon",
+		      "start"      => $localStart,
+		      "end"        => $localEnd,
+		      "score"      => ".",
+		      "strand"     => $gqs{$gqID}[0]->{strand},
+		      "phase"      => ".",
+		      "attributes" => ""
+	  );
+      printGtfFieldsAndAttributes( \%gqfields, \%gqattribs, *GQGTF);
+      
+      
+      # Print slice annotation
+      my $sliceLength = $sliceEnd - $sliceStart +1;
     
-    # slice has only RefSeq or only one seq
-    $sliceID--, next if ( scalar(@$fullAln) < 2 );
-    
-    # mean pairwise ID
-    my $meanPairID = meanPairID($slice) * 100;
-    
-    
-    # Print slice
-    my $sliceOut = join(".", $prefix, $sliceID, "aln");
-    open(SLICE, ">$sliceOut") || die "could not open output file $sliceOut $!\n";
-    print SLICE (formatAln( $slice, $out_format ));
-    close(SLICE);
-    
-
-    # Print annotation of gquad - local gap free coordinates
-    # = local coordinates of gquad within reference sequence
-    # in bed format = zero-based
-    
-    
-    my $localStart = $gqs{$gqID}[0]->{start} - $sliceStart   +1;
-    my $localEnd   = $localStart + $gqLength -1;
-
-    my %gqattribs = ("gene_id"       => ["\"".$sliceID."\""],
-		     "transcript_id" => ["\"".$gqID."\""],
-		     "blockNr"       => [$gqs{$gqID}[3]->{blockNr}->[0]]
-	);
-        
-    my %gqfields = ("chr"        => $sliceID,
-		    "source"     => "gquad",
-		    "type"       => "exon",
-		    "start"      => $localStart,
-		    "end"        => $localEnd,
-		    "score"      => ".",
-		    "strand"     => $gqs{$gqID}[0]->{strand},
-		    "phase"      => ".",
-		    "attributes" => ""
-	);
-    printGtfFieldsAndAttributes( \%gqfields, \%gqattribs, *GQGTF);
-
-
-    # Print slice annotation
-    my $sliceLength = $sliceEnd - $sliceStart +1;
-    
-    my @orgs = ();
-    foreach my $k (sort keys %$orgs){
-      push(@orgs, "\"".$k."\"");
-    }
-
-    my %sliceattribs = ("gene_id",       => ["\"".$sliceID."\""],
-			"transcript_id"  => ["\"".$sliceID."\""],
-			"meanPairID"	 => ["\"".$meanPairID."\""],
-			"slice_length"	 => ["\"".$sliceLength."\""],
-			"org_block"	 => \@orgs,
-			"nr_org"	 => ["\"".(scalar(keys %$orgs))."\""],
-			"blockNr"        => [$gqs{$gqID}[3]->{blockNr}->[0]]
-	);
-
-    my %slicefields = ("chr"        => $gqs{$gqID}[0]->{chr},
-		       "source"     => "alnslice",
-		       "type"       => "exon",
-		       "start"      => $sliceStart,
-		       "end"        => $sliceEnd,
-		       "score"      => ".",
-		       "strand"     => $gqs{$gqID}[0]->{strand},
-		       "phase"      => ".",
-		       "attributes" => ""
-	);
-    printGtfFieldsAndAttributes( \%slicefields, \%sliceattribs, *SGTF);
-
+      my @orgs = ();
+      foreach my $k (sort keys %$orgs){
+	push(@orgs, "\"".$k."\"");
+      }
+      
+      my %sliceattribs = ("gene_id",       => ["\"".$sliceID."\""],
+			  "transcript_id"  => ["\"".$sliceID."\""],
+			  "meanPairID"	 => ["\"".$meanPairID."\""],
+			  "slice_length"	 => ["\"".$sliceLength."\""],
+			  "org_block"	 => \@orgs,
+			  "nr_org"	 => ["\"".(scalar(keys %$orgs))."\""],
+			  "blockNr"        => [$gqs{$gqID}[3]->{blockNr}->[0]]
+	  );
+      
+      my %slicefields = ("chr"        => $gqs{$gqID}[0]->{chr},
+			 "source"     => "alnslice",
+			 "type"       => "exon",
+			 "start"      => $sliceStart,
+			 "end"        => $sliceEnd,
+			 "score"      => ".",
+			 "strand"     => $gqs{$gqID}[0]->{strand},
+			 "phase"      => ".",
+			 "attributes" => ""
+	  );
+      printGtfFieldsAndAttributes( \%slicefields, \%sliceattribs, *SGTF);
+      
     } # done with all gqIDs in current maf block
     
     # done with this aln block -> remove it from list
