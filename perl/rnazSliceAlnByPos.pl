@@ -175,7 +175,8 @@ foreach my $fileNr (keys %files ){
     
     
     # remove emty lines and common gaps in slice
-    &removeEmptyAlnLines($slice, $sliceLength);
+    my $gqLength   = $gqs{$gqID}[0]->{end}   - $gqs{$gqID}[0]->{start} + 1;
+    $slice = &removeEmptyAlnLines($slice, $gqLength);
     removeCommonGaps( $slice );
     
     # slice has only RefSeq or only one seq
@@ -197,7 +198,6 @@ foreach my $fileNr (keys %files ){
     # in bed format = zero-based
     
     
-    my $gqLength   = $gqs{$gqID}[0]->{end}   - $gqs{$gqID}[0]->{start} + 1;
     my $localStart = $gqs{$gqID}[0]->{start} - $sliceStart   +1;
     my $localEnd   = $localStart + $gqLength -1;
 
@@ -272,10 +272,15 @@ close(SGTF);
 
 
 sub removeEmptyAlnLines{
-  my ($slice, $sliceLength) = @_;
+  my ($slice,$gqLength) = @_;
 
+  my $sliceLength = length($slice->[0]->{seq});
+
+  my $maxgaps = $sliceLength - $gqLength;
+  
   for (my $i=0; $i<=$#$slice; $i++) {
     my $numGaps = ( $slice->[$i]->{seq} =~ tr/-./-/ );
-    splice(@$slice,$i,1), $i-- if ( $numGaps == $sliceLength );
+    splice(@$slice,$i,1), $i-- if ( ($numGaps == $sliceLength) || ($numGaps > $maxgaps));
   }
+  return($slice);
 }
