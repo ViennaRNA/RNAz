@@ -258,7 +258,7 @@ sub removeEmptyAlnLines{
   
   for (my $i=0; $i<=$#$slice; $i++) {
     my $numGaps = ( $slice->[$i]->{seq} =~ tr/-./-/ );
-    splice(@$slice,$i,1), $i-- if ( ($numGaps == $sliceLength) || ($numGaps > $maxgaps));
+    splice(@$slice,$i,1), $i-- if ( $numGaps > $maxgaps);
   }
   return($slice);
 }
