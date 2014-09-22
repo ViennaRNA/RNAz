@@ -170,6 +170,8 @@ foreach my $fileNr (keys %files ){
       # mean pairwise ID
       my $meanPairID = meanPairID($slice) * 100;
       
+      # make reverse complement of the alignment if gquad was found on minus strand
+      $slice = revAln($slice) if $gqs{$gqID}[0]->{strand} eq "-";
       
       # Print slice
       my $sliceOut = join(".", $prefix, $sliceID, "aln");
