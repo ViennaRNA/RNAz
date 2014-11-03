@@ -816,7 +816,7 @@ PRIVATE void help(void){
   printf("%s\n","  -o, --outfile=FILENAME  Output filename");
   printf("%s\n","  -p, --cutoff=FLOAT      Probability cutoff");
   printf("%s\n","  -d, --dinucleotide      Use dinucleotide shuffled z-scores (default)");
-  printf("%s\n","  -m, --mononucleotide    Use mononucleotide shuffled z-scores (default)");
+  printf("%s\n","  -m, --mononucleotide    Use mononucleotide shuffled z-scores");
   printf("%s\n","  -l, --locarnate         Use decision model for structural alignments (default=off)");
   printf("%s\n","  -n, --no-shuffle        Never fall back to shuffling (default=off)");
   printf("%s\n","  -h, --help              Print this help screen");
