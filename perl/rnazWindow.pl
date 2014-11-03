@@ -28,6 +28,7 @@ my $verbose       = 0;
 my $version       = 0;
 my $help          = 0;
 my $man           = 0;
+my $noRangeWarn   = 0;
 
 GetOptions(
   'window:i'      => \$window,
@@ -54,7 +55,8 @@ GetOptions(
   'man'           => \$man,
   'h'             => \$help,
   'version'       => \$version,
-  'v'             => \$version
+  'v'             => \$version,
+  'no-rangecheck'  => \$noRangeWarn
 ) or pod2usage(2);
 
 pod2usage(1) if $help;
@@ -256,21 +258,22 @@ while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
       #print $tmpSeq, ":",rangeWarn([{seq=>$tmpSeq}]),"\n";
       my $warning = rangeWarn( [ { seq => $tmpSeq } ] );
       if ($warning) {
-        $slice->[$i] = undef;
+        $slice->[$i] = undef unless $noRangeWarn;
         if ($verbose) {
           my $ii = $i + 1;
           if ( $warning == 1 ) {
             print STDERR
-              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: too short.\n";
+              "Outside training range: Alignment $alnCounter, window $windowCounter: Seq $ii: too short or too long.\n";
           }
           if ( $warning == 2 ) {
             print STDERR
-              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: base composition out of range.\n";
+              "Outside training range: Alignment $alnCounter, window $windowCounter: Seq $ii: base composition out of range.\n";
           }
           if ( $warning == 3 ) {
             print STDERR
-              "Alignment $alnCounter, window $windowCounter: Removing seq $ii: base composition out of range/too short.\n";
+              "Outside training range: Alignment $alnCounter, window $windowCounter: Seq $ii: base composition out of range/too short or long.\n";
           }
+          print "Removing Seq $ii\n" unless $noRangeWarn;
         }
       }
     }
@@ -491,6 +494,16 @@ subset. Having a reference sequence is crucial if you are doing
 screens of genomic regions. For some other applications it might not
 be necessary and in such cases you can change the default behaviour by
 setting this option.
+
+=item B<--no-rangecheck>
+
+By default, all sequences of all windows are discarded, if the length 
+or base composition is outside the training range of RNAz, independent 
+of the window-size commandline parameter. 
+However with the flag --no-rangecheck such sequences outside the training 
+range are not discarded. As of version 2.0, RNAz can cope with sequences 
+outside this traning range. However the same quality of the RNAz results 
+cannot be guaranteed if sequences outside the default range are present.
 
 =item B<--verbose>
 

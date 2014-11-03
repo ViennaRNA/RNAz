@@ -63,6 +63,9 @@ pod2usage( -verbose => 2 ) if $man;
 if ($version) {
   print "\nrnazWindow.pl is part of RNAz $RNAz::rnazVersion\n\n";
   print "http://www.tbi.univie.ac.at/~wash/RNAz\n\n";
+  print "\nrnazWindow_gq.pl disables most of the filtering checks
+   (commented out in source code) performed by rnazWindow.pl and 
+   does not slice the alignement\n\n";
   exit(0);
 }
 
@@ -387,8 +390,10 @@ __END__
 
 =head1 NAME
 
-C<rnazWindow.pl> - Slice alignments in overlapping windows and
+C<rnazWindow_gq.pl> - Slice alignments in overlapping windows and
 process/filter alignment windows in various ways.
+
+The rnazWindow_gq.pl has several filtering steps commented out and doesn't slice the alignement.
 
 =head1 SYNOPSIS
 
