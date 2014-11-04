@@ -703,12 +703,13 @@ sub meanPairID{
       }
     }
   }
-  if ($pairs <1){
-    foreach my $i (@inputAln){
-      print "$_ $i->{$_}" foreach (sort keys %$i);
-      print "\n";
-    }
-  }
+
+#  if ($pairs <1){
+#    foreach my $i (@inputAln){
+#      print "$_ $i->{$_}" foreach (sort keys %$i);
+#      print "\n";
+#    }
+#  }
   return sprintf("%.4f",$matches/$pairs);
 }
 
