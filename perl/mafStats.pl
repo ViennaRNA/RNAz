@@ -147,56 +147,7 @@ __END__
 
 =head1 NAME
 
-C<rnazMafSplit.pl> - Split Maf alignemnt file into individual
-maf blocks and write each block into a separate file.
-
-Output files are named as follows:
-
-  mafsplit.INDEX.ALNFORMAT
-
-=head1 SYNOPSIS
-
- rnazMafSplit.pl [options] [file]
-
-=head1 OPTIONS
-
-=over 8
-
-=item B<-n> N
-
-number of maf blocks per file (Default: B<1>)
-
-=item B<-i, --index> N
-
-start indexing blocks at index i (Default: B<1>)
-
-=item B<-o, --out>
-
-prefix of output files. (Default: B<mafsplit>)
-
-=item B<-v, --version>
-
-Prints version information and exits.
-
-=item B<-h, --help>
-
-Prints a short help message and exits.
-
-=back
-
-=head1 DESCRIPTION
-
-To run RNAz on large data sets, e.g. genome wide alignments, it is
-useful to split the input data, in this case genome wide alignemnst in maf format,
-and run the analysis on a cluster machine.
-    
-=head1 EXAMPLES
-
- # rnazMafSplit.pl some_alignment.maf
-
-Split the alignment some_alignment.maf and write each maf block into
-a aseparate file. Files will be named by a running index,
-which corresponds to the number of the maf block in the maf file.
+C<mafStats.pl> - Gather some basic statistics about maf alignement.
 
 =head1 AUTHORS
 
