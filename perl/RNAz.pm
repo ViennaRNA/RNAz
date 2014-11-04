@@ -589,7 +589,7 @@ sub rangeWarn{
     $seq    =~ s/[-.]+//g;
     
     my $length = length($seq);
-    return 1 if $length;
+    return 1 if ($length==0);
     
     my %nt = ();
     foreach my $char (@alphabet){
