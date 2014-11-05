@@ -704,12 +704,13 @@ sub meanPairID{
     }
   }
 
-#  if ($pairs <1){
-#    foreach my $i (@inputAln){
-#      print "$_ $i->{$_}" foreach (sort keys %$i);
-#      print "\n";
-#    }
-#  }
+# Print, if crash because of division by 0
+  if ($pairs <1){
+    foreach my $i (@inputAln){
+      print "$_ $i->{$_}" foreach (sort keys %$i);
+      print "\n";
+    }
+  }
   return sprintf("%.4f",$matches/$pairs);
 }
 
@@ -751,6 +752,10 @@ sub pruneAln{
     my $i = shift;
     return $aln[$i]->{dead}?0:1;
   };
+
+  #Use the start and end of the first sequence as a seed for rand
+  #to make samples reproduceable. 
+  srand($aln[0]->{start}+$aln[0]->{end});
 
   # Calculate matrix of pairwise identities
   my @idMatrix=();
