@@ -273,7 +273,7 @@ while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
             print STDERR
               "Outside training range: Alignment $alnCounter, window $windowCounter: Seq $ii: base composition out of range/too short or long.\n";
           }
-          print "Removing Seq $ii\n" unless $noRangeWarn;
+          print STDERR "Removing Seq $ii\n" unless $noRangeWarn;
         }
       }
     }
