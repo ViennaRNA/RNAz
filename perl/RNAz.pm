@@ -707,9 +707,11 @@ sub meanPairID{
 # Print, if crash because of division by 0
   if ($pairs <1){
     foreach my $i (@inputAln){
-      print "$_ $i->{$_}" foreach (sort keys %$i);
-      print "\n";
+      print STDERR "$_ $i->{$_}" foreach (sort keys %$i);
+      print STDERR "\n";
     }
+    print STDERR "WARNING: Calculation MPI would be illegal division by 0. Probably gap-only sequence. MPI of 0 returned\n";
+    return 0;	
   }
   return sprintf("%.4f",$matches/$pairs);
 }
