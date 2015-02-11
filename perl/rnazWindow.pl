@@ -214,7 +214,7 @@ while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
 
           my $tmpLength = length( $tmpAln[0]->{seq} );
 
-          if ( ( $numGaps0 + $numGaps1 ) / $tmpLength > $maxGap ) {
+          if ($tmpLength==0 or ( $numGaps0 + $numGaps1 ) / $tmpLength > $maxGap ) {
             $slice->[$i] = undef;
             if ($verbose) {
               my $ii = $i + 1;
