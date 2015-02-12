@@ -194,7 +194,7 @@ while ( my $alnString = getNextAln( $alnFormat, $fh ) ) {
     if ($refSeq) {
       my $numGaps = ( $slice->[0]->{seq} =~ tr/-./-/ );
 
-      if ( $numGaps / $sliceLength > $maxGap ) {
+      if ( $numGaps==$sliceLength or $numGaps / $sliceLength > $maxGap ) {
         $slice->[0] = undef;
 
         if ($verbose) {
