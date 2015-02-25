@@ -457,7 +457,7 @@ more sequences in the alignment than C<--max-seqs>. (Default: B<1>)
 Minimum number of columns of an alignment slice. After removing
 sequences from the alignment, ``all-gap" columns are removed. If the
 resulting alignment has fewer than N columns, the complete alignment
-is discarded.
+is discarded. Default: 50
 
 =item B<--opt-id>=X
 
