@@ -837,14 +837,15 @@ sub pruneAln{
       my $maxcost=0;
       my $maxind;
       foreach my $i (0..$N-1) {
-	next unless &$alive($i);
-	next if $i==0 && $keepfirst; # never delete seq 0
-	my $cost = 0;
-	foreach my $j (0..$N-1) {
-	  next if $i==$j;
-	  $cost += ($idMatrix[$i][$j]-$optSim)*($idMatrix[$i][$j]-$optSim);
-	}
-	($maxcost,$maxind) = ($cost,$i) if $cost>$maxcost;
+	    next unless &$alive($i);
+	    next if $i==0 && $keepfirst; # never delete seq 0
+	    my $cost = 0;
+	    foreach my $j (0..$N-1) {
+	      next if $i==$j;
+        next unless &$alive($j);
+	      $cost += ($idMatrix[$i][$j]-$optSim)*($idMatrix[$i][$j]-$optSim);
+	    }
+	    ($maxcost,$maxind) = ($cost,$i) if $cost>$maxcost;
       }
       &$remove($maxind); $Nalive--;
     }
