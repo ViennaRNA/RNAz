@@ -93,8 +93,8 @@ sub readMAF{
 
       # new by at: positions on minus strand
       if ($strand eq "-"){
-	$start = $fullLength-($start+$length);
-	$end   = $fullLength-$start;
+      	$end   = $fullLength-$start;
+        $start = $fullLength-($start+$length);
       }
       
       $seq =~ s/\./-/g;
