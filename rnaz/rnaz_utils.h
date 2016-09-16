@@ -50,3 +50,6 @@ void freeFields(char** fields);
 
 char** splitLines(char* string);
 
+int appendf(char ** const buffer, unsigned * const bufferSize,
+             char const *restrict format, ...);
+

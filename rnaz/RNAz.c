@@ -84,6 +84,7 @@ int main(int argc, char *argv[])
   char *string=NULL;
   double singleMFE,sumMFE,singleZ,sumZ,z,sci,id,decValue,prob,comb,entropy,GC;
   double min_en, real_en;
+  unsigned outputSize=0;
   int i,j,k,l,ll,r,countAln,nonGaps,singleGC;
   int (*readFunction)(FILE *clust,struct aln *alignedSeqs[]);
   char** lines=NULL;
@@ -269,7 +270,7 @@ int main(int argc, char *argv[])
 	  sumMFE=0.0;
 	  GC=0.0;
 
-	  output=(char *)space(sizeof(char)*(length+160)*(n_seq+1)*3);
+      /* output=(char *)space(sizeof(char)*(length+160)*(n_seq+1)*3); */
 
 	  strcpy(warningString,"");
 	  strcpy(warningString_regression,"");
@@ -309,16 +310,23 @@ int main(int argc, char *argv[])
 
 		GC+=(double) singleGC/nonGaps;
 		sumZ+=singleZ;
-		sumMFE+=singleMFE;
+        sumMFE+=singleMFE;
 
-		if (window[1]->strand!='?' && !args.window_given){
-		  sprintf(output+strlen(output),
-			  ">%s %d %d %c %d\n",
-			  window[i]->name,window[i]->start,
-			  window[i]->length,window[i]->strand,
-			  window[i]->fullLength);
+        if (window[1]->strand!='?' && !args.window_given){
+          appendf(&output, &outputSize,
+            ">%s %d %d %c %d\n",
+            window[i]->name,
+            window[i]->start,
+            window[i]->length,window[i]->strand,
+            window[i]->fullLength);
+          /* sprintf(output+strlen(output),
+                  ">%s %d %d %c %d\n",
+                  window[i]->name,window[i]->start,
+                  window[i]->length,window[i]->strand,
+                  window[i]->fullLength); */
 		} else {
-		  sprintf(output+strlen(output),">%s\n",window[i]->name);
+          appendf( &output, &outputSize, ">%s\n", window[i]->name);
+          /*sprintf(output+strlen(output),">%s\n", window[i]->name); */
 		}
 
 
@@ -340,13 +348,16 @@ int main(int argc, char *argv[])
     ch = 'R';
     if (z_score_type == 1 || z_score_type == 3) ch = 'S';
 		  		  
-    sprintf(output+strlen(output),"%s\n%s ( %6.2f, z-score = %6.2f, %c)\n",
+    appendf( &output, &outputSize, "%s\n%s ( %6.2f, z-score = %6.2f, %c)\n",
             window[i]->seq,gapStruc,singleMFE,singleZ,ch);
+    /* sprintf(output+strlen(output),"%s\n%s ( %6.2f, z-score = %6.2f, %c)\n",
+            window[i]->seq,gapStruc,singleMFE,singleZ,ch); */
     z_score_type = z_score_type_orig;
 		  
 
 		free(woGapsSeq);
-		free(singleStruc);
+        free(singleStruc);
+        free(gapStruc);
 		
 	  }
 
@@ -360,9 +371,12 @@ int main(int argc, char *argv[])
 	  }
 
 	  string = consensus((const struct aln**) window);
-	  sprintf(output+strlen(output),
+      appendf( &output, &outputSize,
+               ">consensus\n%s\n%s (%6.2f = %6.2f + %6.2f) \n",
+               string, structure, min_en, real_en, min_en-real_en );
+      /* sprintf(output+strlen(output),
 			  ">consensus\n%s\n%s (%6.2f = %6.2f + %6.2f) \n",
-			  string, structure, min_en, real_en, min_en-real_en );
+              string, structure, min_en, real_en, min_en-real_en ); */
 	  free(string);
 
 	  id=meanPairID((const struct aln**)window);
@@ -438,13 +452,18 @@ int main(int argc, char *argv[])
 	  fprintf(out,"%s",warningString);
 	  
  	  fprintf(out,"\n######################################################################\n\n"); 
-	
- 	  fprintf(out,"%s",output); 
+
+      fprintf(out,"%s",output);
 	
 	  fflush(out);
 
 	  free(structure);
-	  free(output);
+      /*
+       * No need to free output yet. By setting the first char of buffer to 0,
+       * the entire buffer will be overwritten during the next iteration.
+       */
+      output[0] = 0;
+      /* free(output); */
 
 	  if (currDirection==FORWARD && args.predict_strand_flag){
 		meanMFE_fwd=sumMFE/n_seq;
@@ -470,6 +489,9 @@ int main(int argc, char *argv[])
 	}
 	freeAln((struct aln **)AS);
 	freeAln((struct aln **)window);
+    free(output);
+    output     = NULL;
+    outputSize = 0;
 	
   }
   if (args.inputs_num>=1){

@@ -20,6 +20,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdarg.h>
 #include "fold.h"
 #include "fold_vars.h"
 #include "utils.h"
@@ -748,3 +749,51 @@ int encodeBase(char base){
   return -1;
 }
 
+/* Append a string, formatted with a printf-style format specifier, to a
+ * zero-terminated buffer. If *bufferSize==0 or *buffer==NULL, the buffer does
+ * not need to be zero-terminated, and the pointer is replaced by a new one. The
+ * pointer to the buffer is updated if the buffer is (re-)allocated, which is
+ * why a pointer to the pointer to the buffer is required.
+ */
+int appendf(char ** const buffer, unsigned * const bufferSize,
+            char const * restrict format, ...)
+{
+    size_t currentStringLength;
+    int appendLength;
+    va_list printf_args, printf_args_copy;
+
+    if (buffer == NULL)             /* invalid pointer to buffer pointer */
+        return -2;
+
+    /* Set zero if buffer not yet allocated, i.e. no terminating \0 or even no
+     * valid pointer exists */
+    if (*bufferSize == 0 || *buffer == NULL) {
+        currentStringLength = 0;
+        *bufferSize         = 0;
+        *buffer             = NULL;
+    }
+    else {
+        currentStringLength = strlen(*buffer);
+    }
+
+    /* Get length of string to append */
+    va_start( printf_args, format);
+    va_copy( printf_args_copy, printf_args);
+    appendLength        = vsnprintf( NULL, 0, format, printf_args_copy);
+    va_end(  printf_args_copy);
+
+    if (appendLength < 0)            /* invalid format specifier */
+        return -1;
+
+    if (*bufferSize < currentStringLength + appendLength + 1) {
+        /* Re-alloc required */
+        *bufferSize = currentStringLength + appendLength + 1;
+        *buffer     = xrealloc( *buffer, *bufferSize);
+    }
+
+    vsnprintf( *buffer + currentStringLength, *bufferSize - currentStringLength,
+               format, printf_args);         /* append string + \0 */
+    va_end( printf_args);
+
+    return 0;
+}
