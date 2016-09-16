@@ -694,7 +694,7 @@ sub meanPairID{
 	for my $j ($i+1..$#aln){
 	  for my $k (0..(@{$aln[0]}-1)){
 		if (($aln[$i][$k] ne '-') or ($aln[$j][$k] ne '-')){
-		  if ($aln[$i][$k] eq $aln[$j][$k]){
+		  if (uc($aln[$i][$k]) eq uc($aln[$j][$k])){  #Case insensitive comparison bcse of potentially masked letters
 			$matches++;
 		  }
 		  $pairs++;
@@ -1002,7 +1002,7 @@ sub shuffleAln{
 	$level=2;
   }
 
-  # convert in list of list format which is use by shuffle-aln.pl
+  # convert in list of list format hich is use by shuffle-aln.pl
   my @aln=();
   foreach my $line (@inputAln){
 	$line->{seq}=~s/\./-/g;
