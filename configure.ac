@@ -33,7 +33,7 @@ AC_PROG_INSTALL
 AC_CONFIG_HEADERS(config.h) 
 
 # this is libsvm stuff
-AC_SUBST([LIBSVM_VERSION],[3.17])
+AC_SUBST([LIBSVM_VERSION],[3.23])
 
 AC_OUTPUT([Makefile librna/Makefile rnaz/Makefile  perl/Makefile models/Makefile examples/Makefile man/Makefile])
 
