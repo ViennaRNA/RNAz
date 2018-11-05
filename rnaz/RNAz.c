@@ -54,13 +54,9 @@ enum {FORWARD=1, REVERSE=2};
 int main(int argc, char *argv[])
 {
 
-  char *modelDir=NULL;              /* Directory with model files */
   struct svm_model* decision_model; /* SVM classification model */
 
   /* Command line options */
-  int reverse=0;     /* Scan reverse complement */
-  int showVersion=0; /* Shows version and exits */
-  int showHelp=0;    /* Show short help and exits */
   int from=-1;       /* Scan slice from-to  */
   int to=-1;
 
@@ -85,9 +81,8 @@ int main(int argc, char *argv[])
   double singleMFE,sumMFE,singleZ,sumZ,z,sci,id,decValue,prob,comb,entropy,GC;
   double min_en, real_en;
   unsigned outputSize=0;
-  int i,j,k,l,ll,r,countAln,nonGaps,singleGC;
+  int i,j,k,l,ll,countAln,nonGaps,singleGC;
   int (*readFunction)(FILE *clust,struct aln *alignedSeqs[]);
-  char** lines=NULL;
   int directions[3]={FORWARD,0,0};
   int currDirection;
   struct gengetopt_args_info args;
@@ -537,8 +532,6 @@ PRIVATE void classify(double* prob, double* decValue,
 		      struct svm_model* decision_model,
 		      double id,int n_seq, double z,double sci,
 		      double entropy, int decision_model_type){
-
-  FILE *out=stdout; /* Output file */
 
   /************************************/
   /* normal model as used in RNAz 1.0 */

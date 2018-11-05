@@ -70,11 +70,10 @@ void get_strand_predictors(
     int i,j;
     char *structure=NULL, *structure_reverse=NULL;
     char *singleStruc, *woGapsSeq, *singleStruc_reverse, *woGapsSeq_reverse;
-    double decValue=0;
     double singleMFE,sumMFE,singleZ,sumZ,z,sci;
     double singleMFE_reverse,sumMFE_reverse,singleZ_reverse,sumZ_reverse,z_reverse,sci_reverse;
-    double min_en, real_en;
-    double min_en_reverse, real_en_reverse;
+    double min_en;
+    double min_en_reverse;
     int z_score_type;
     char warningString_strand[2000];
        
@@ -123,9 +122,9 @@ void get_strand_predictors(
 	    ++j;
 	}
 	singleMFE = fold(woGapsSeq, singleStruc);
-	singleZ=mfe_zscore(woGapsSeq,singleMFE,z_score_type,0,warningString_strand);
+	singleZ=mfe_zscore(woGapsSeq,singleMFE,&z_score_type,0,warningString_strand);
 	singleMFE_reverse = fold(woGapsSeq_reverse, singleStruc_reverse);
-	singleZ_reverse=mfe_zscore(woGapsSeq_reverse,singleMFE_reverse,z_score_type,0,warningString_strand);
+	singleZ_reverse=mfe_zscore(woGapsSeq_reverse,singleMFE_reverse,&z_score_type,0,warningString_strand);
 	sumZ+=singleZ;
 	sumMFE+=singleMFE;
 	sumZ_reverse+=singleZ_reverse;
@@ -142,7 +141,6 @@ void get_strand_predictors(
 	eos_debug=-1; /* shut off warnings about nonstandard pairs */
 	for (i=0; window[i]!=NULL; i++) 
 	    s += energy_of_struct(window[i], structure);
-	real_en = s/i;
     }
     
     z=sumZ/n_seq;

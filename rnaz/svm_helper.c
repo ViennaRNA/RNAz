@@ -205,9 +205,6 @@ void get_regression_models(struct svm_model** avg_model,
 
 struct svm_model* get_decision_model(char *basefilename, int decision_model_type){
 
-  char fn[256];
-
- 
   struct svm_model* model=NULL;
   
   if (basefilename!=NULL){
@@ -263,7 +260,6 @@ struct svm_model* svm_load_model_string(char *modelString){
   char *key, *value, *field;
   char c;
   int dataStart, elements;
-  int isColon;
   struct svm_node *x_space=NULL;
   
   model = (struct svm_model*)space(sizeof(struct svm_model));
@@ -326,7 +322,9 @@ struct svm_model* svm_load_model_string(char *modelString){
 	  
 	if (strcmp(key,"degree")==0){
 	  value=fields[1];
-	  sscanf(value,"%lf",&model->param.degree);
+    double tmp = 0;
+	  sscanf(value,"%lf",&tmp);
+    model->param.degree = (int)tmp;
 	} else 
 
 	if (strcmp(key,"coef0")==0){
@@ -471,7 +469,7 @@ int print_model(const char *model_file_name, struct svm_model *model)
 	fprintf(fp,"kernel_type %s\n", kernel_type_table[model->param.kernel_type]);
 
 	if(model->param.kernel_type == POLY)
-		fprintf(fp,"degree %g\n", model->param.degree);
+		fprintf(fp,"degree %d\n", model->param.degree);
 
 	if(model->param.kernel_type == POLY || model->param.kernel_type == RBF || model-> param.kernel_type == SIGMOID)
 		fprintf(fp,"gamma %g\n", model->param.gamma);

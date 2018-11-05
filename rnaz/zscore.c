@@ -16,6 +16,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <string.h>
+#include <time.h>
 #include "utils.h"
 #include "fold.h"
 #include "svm.h"
@@ -96,9 +97,6 @@ void base_frequencies(const char *array, unsigned int n, double *mono, double *d
   
   for (i = 0; i < 5 ; i++)
   {
-    char tmp[10];
-    /*sprintf(tmp, "%.3f", (double) mono[i]/n);
-      mono[i] = (double) atof(tmp);*/
     mono[i] = (double) mono[i]/n;
   }
 

@@ -139,7 +139,7 @@ int read_maf(FILE *clust, struct aln *alignedSeqs[]) {
   int num_seq = 0;
   char** fields;
   char *name,*seq;
-  int start,end,length,fullLength;
+  int start,length,fullLength;
   char strand;
   int n,nn;
 
@@ -589,7 +589,7 @@ struct aln* createAlnEntry(char* name, char* seq, int start, int length, int ful
 	/* check if field is not only whitespace */
 	notSpace=0;
 	j=0;
-	while (c=currField[j]!='\0'){
+	while ((c=currField[j])!='\0'){
 	  if (!isspace(c)){
 		notSpace=1;
 		break;
@@ -670,7 +670,7 @@ double combPerPair(struct aln *AS[],char* structure){
 
   int* stack;
   int stackN;
-  int i,j,k,l,x,y;
+  int i,j,k,x,y;
   int nPairs, nCombs;
   char c;
   int base1,base2;
