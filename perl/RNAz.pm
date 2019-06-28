@@ -262,7 +262,9 @@ sub formatAln{
     $output.="a score=0\n";
     foreach my $row (@aln){
       my $length=$row->{end}-$row->{start};
-      $output.="s $row->{name} $row->{start} $length $row->{strand} $row->{fullLength} $row->{seq}\n";
+      my $start = $row->{start};
+      $start = $row->{fullLength} - $row->{end} if $row->{strand} eq "-";
+      $output.="s $row->{name} $start $length $row->{strand} $row->{fullLength} $row->{seq}\n";
     }
     $output.="\n";
   }
@@ -339,13 +341,31 @@ sub sliceAlnByColumn{
 	push @newAln,{%{$_}};
   }
 
+  my $columns = length($newAln[0]->{seq});
   foreach my $i (0..$#newAln){
 
 	if ((defined $newAln[$i]->{start}) and (defined $newAln[$i]->{start})){
 	  my $oldStart=$newAln[$i]->{start};
 	  my $oldEnd=$newAln[$i]->{end};
-	  $newAln[$i]->{start}=alnCol2genomePos($newAln[$i]->{seq},$oldStart,$start);
-	  $newAln[$i]->{end}=alnCol2genomePos($newAln[$i]->{seq},$oldStart,$end-1)+1;
+	  my $sequence = $newAln[$i]->{seq};
+	  my $newStart = $start;
+	  my $newEnd   = $end - 1;
+
+    if ($newAln[$i]->{strand} eq "-") {
+      $sequence = reverse($sequence);
+      $oldEnd = $newAln[$i]->{fullLength} - $newAln[$i]->{start};
+      $oldStart = $newAln[$i]->{fullLength} - $newAln[$i]->{start} - $newAln[$i]->{length};
+      $newStart = $columns - $end;
+      $newEnd   = $columns - $start - 1;
+      $newAln[$i]->{start}=alnCol2genomePos($sequence,$oldStart,$newStart);
+      $newAln[$i]->{end}=alnCol2genomePos($sequence,$oldStart,$newEnd)+1;
+      my $ll = $newAln[$i]->{end}-$newAln[$i]->{start};
+      $newAln[$i]->{end} = $newAln[$i]->{fullLength} - $newAln[$i]->{start};
+      $newAln[$i]->{start} = $newAln[$i]->{fullLength} - ($newAln[$i]->{start}+$ll);
+    } else {
+      $newAln[$i]->{start}=alnCol2genomePos($sequence,$oldStart,$newStart);
+      $newAln[$i]->{end}=alnCol2genomePos($sequence,$oldStart,$newEnd)+1;
+    }
 	}
 
 	$newAln[$i]->{seq}=substr($newAln[$i]->{seq},$start,$end-$start);
