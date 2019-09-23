@@ -5,6 +5,7 @@ pm_DATA=RNAz.pm
 pmdir=$(pkgdatadir)/perl
 
 pscript = \
+    alifoldz.pl \
     convertMaf.pl \
     extractMAFblock.pl \
     mafStats.pl \
